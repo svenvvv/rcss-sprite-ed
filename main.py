@@ -1,24 +1,48 @@
 #!/bin/python3
 
-from PySide2 import QtCore, QtWidgets, QtPrintSupport, QtGui
-from PySide2.QtGui import QColor, QBrush, QPen, QPainter, QPaintEvent
-from PySide2.QtCore import Qt, QRect, QPoint
+from PySide2.QtGui import *
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
 
 from Myth.Sprite import Sprite
 from Myth.ImageSelect import ImageSelect
+from Myth.RCSSParser import RCSSParser
+from Myth.SpriteEditModal import SpriteEditModal
 
-class ImageViewer(QtWidgets.QMainWindow):
+class QListWidgetSprite(QListWidgetItem):
+    def __init__(self, sprite):
+        super().__init__(sprite.name)
+        self.sprite = sprite
+
+class ImageViewer(QMainWindow):
+    curCss = None
     sprites = []
+    editSprite = None
+    windowTitle = "RCSS Spritesheet Editor"
+
     def __init__(self):
         super(ImageViewer, self).__init__()
 
-        self.printer = QtPrintSupport.QPrinter()
         self.scaleFactor = 0.0
 
         self.imageLabel = ImageSelect()
-        self.imageLabel.setSizePolicy(QtWidgets.QSizePolicy.Ignored,
-                QtWidgets.QSizePolicy.Ignored)
+        self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.imageLabel.setScaledContents(True)
+
+        self.dockWidget = QDockWidget(self)
+        self.dockWidget.setWindowTitle("Sprites")
+        self.dockWidgetContents = QWidget()
+        self.gridLayout = QGridLayout(self.dockWidgetContents)
+
+        self.spritesList = QListWidget(self.dockWidgetContents)
+        self.spritesList.itemSelectionChanged.connect(self.handleSpriteSelectionChanged)
+        self.spritesList.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.spritesList.customContextMenuRequested.connect(self.createListEditMenu)
+
+        self.gridLayout.addWidget(self.spritesList, 0, 0, 1, 1)
+
+        self.dockWidget.setWidget(self.dockWidgetContents)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dockWidget)
 
         self.imageLabel.rectSelected.connect(lambda r: self.createSprite(r))
         self.imageLabel.paintFinished.connect(lambda p: self.paintSprites(p))
@@ -26,49 +50,137 @@ class ImageViewer(QtWidgets.QMainWindow):
 
         self.imageLabel.setMouseTracking(True)
 
-        self.scrollArea = QtWidgets.QScrollArea()
+        self.scrollArea = QScrollArea()
         self.scrollArea.setWidget(self.imageLabel)
         self.setCentralWidget(self.scrollArea)
-
-        self.menu = QtWidgets.QMenu(self)
-
-        editAction = QtWidgets.QAction('Edit', self)
-        self.menu.addAction(editAction)
-
-        replaceAction = QtWidgets.QAction('Re-place', self)
-        self.menu.addAction(replaceAction)
-
-        deleteAction = QtWidgets.QAction('Delete', self)
-        self.menu.addAction(deleteAction)
 
         self.createActions()
         self.createMenus()
 
-        self.setWindowTitle("RCSS Spritesheet Editor")
-        self.resize(500, 400)
+        self.setWindowTitle(self.windowTitle)
+        self.resize(640, 480)
+
+        self.parseStylesheet("../../data/gui/invader.rcss")
+
+    def handleSpriteSelectionChanged(self):
+        sel = self.spritesList.selectedItems()
+        if len(sel) > 0:
+            self.selectSpriteFromList(sel[0])
+        else:
+            for s in self.sprites:
+                s.highlight = False
+
+    def parseStylesheet(self, filename):
+        parser = RCSSParser()
+        css = parser.parse_stylesheet_file(filename)
+
+        if len(css.errors):
+            print("Errors parsing stylesheets:")
+            print(css.errors)
+
+        spritesheets = list(filter(lambda r: r.at_keyword == "@spritesheet", css.rules))
+
+        if len(spritesheets) > 1:
+            QMessageBox.error(self, self.windowTitle,
+                              f"File contained {len(spritesheets)} spritesheets, currently only one is supported")
+            return
+
+        for ss in spritesheets:
+            self.curCss = ss
+            for d in ss.declarations:
+                it = QListWidgetSprite(d)
+                self.spritesList.addItem(it)
+
+                d.QListItemRef = it
+                self.sprites.append(d)
+
+    def writeStylesheet(self):
+        ss = self.curCss
+
+        print(f"@stylesheet {ss.name}")
+        print("{")
+        print(f"\tsrc: {ss.props['src']}")
+        print(f"\tresolution: {ss.props['resolution']}x")
+
+        for s in self.sprites:
+            print(f"\t{s.toRCSS()}")
+        print("}")
 
     def repaint(self):
         self.imageLabel.update()
 
-    def removeHighlight(self, spr):
-        spr.highlight = False
-        self.repaint()
+    def selectSpriteFromList(self, item):
+        ourSprite = self.findSpriteFromQItem(item)
+        if ourSprite:
+            for s in self.sprites:
+                s.highlight = False
+            ourSprite.highlight = True
+            self.repaint()
+
+    def findSpriteFromQItem(self, item):
+        for s in self.sprites:
+            if s.QListItemRef == item:
+                return s
+
+    def findSpriteByName(self, name):
+        for s in self.sprites:
+            if s.name == name:
+                return s
+
+    def createListEditMenu(self, pos):
+        it = self.spritesList.selectedItems()[0]
+        target = self.findSpriteFromQItem(it)
+        self.spriteContextMenu(target, QCursor.pos())
+
+    def createSelectSpriteContextMenu(self, pos, sprites):
+        def selectSpriteFromCtx(act):
+            self.editSprite = self.findSpriteByName(act.text())
+            # NOTE: Pop up at cursor, because it feels better ;)
+            self.ctxEditMenu.popup(QCursor.pos())
+
+        menu = QMenu(self)
+        menu.triggered.connect(selectSpriteFromCtx)
+
+        for spr in sprites:
+            act = QAction(spr.name, self)
+            menu.addAction(act)
+
+        menu.popup(pos)
+
+    def spriteContextMenu(self, sprite, pos):
+        self.editSprite = sprite
+        self.ctxEditMenu.popup(pos)
 
     def showContextMenu(self, target):
-        hit = None
+        hit = []
         for spr in self.sprites:
             if spr.aabbTest(target):
-                hit = spr
-                break
+                hit.append(spr)
 
-        if hit:
-            spr.highlight = True
-            self.repaint()
-            self.menu.aboutToHide.connect(lambda: self.removeHighlight(spr))
-            # Show the popup at cursor position, not target pos
-            self.menu.popup(QtGui.QCursor.pos())
+        if len(hit) == 0:
+            return
+
+        # Show the popup at cursor position, not target pos
+        pos = QCursor.pos()
+
+        if len(hit) > 1:
+            print("Multiple hits: ", hit)
+            self.createSelectSpriteContextMenu(pos, hit)
+            return
+
+        selHit = hit[0]
+        if selHit.QListItemRef:
+            it = selHit.QListItemRef
+            l = it.listWidget()
+            l.setCurrentItem(it)
+            self.spriteContextMenu(selHit, pos)
+        else:
+            QMessageBox.error(self, self.windowTitle, "Sprite is missing list ref!")
 
     def paintSprites(self, painter):
+        if not self.drawRectsAct.isChecked():
+            return
+
         for spr in self.sprites:
             rect = spr.rect
             x = rect.x()
@@ -77,59 +189,51 @@ class ImageViewer(QtWidgets.QMainWindow):
             h = rect.height()
 
             if spr.highlight:
-                painter.setPen(QPen(Qt.red))
+                painter.setPen(QPen(Qt.red, 3))
             else:
                 painter.setPen(QPen(Qt.black))
 
             painter.drawRect(rect)
 
-            # Draw diagonals
-            painter.drawLine(x, y, x + w, y + h)
-            painter.drawLine(x + w, y, x, y + h)
+            if self.drawDiagonalsAct.isChecked():
+                painter.drawLine(x, y, x + w, y + h)
+                painter.drawLine(x + w, y, x, y + h)
 
-            text_fm = QtGui.QFontMetrics(painter.font())
-            text_width = text_fm.width(spr.name)
-
-            painter.drawText(x + w/2 - text_width/2, y + h/2, spr.name)
+            if self.drawNamesAct.isChecked():
+                text_fm = QFontMetrics(painter.font())
+                text_width = text_fm.width(spr.name)
+                painter.drawText(x + w/2 - text_width/2, y + h/2, spr.name)
 
     def createSprite(self, r):
-        spr = Sprite("aa", r)
-        self.sprites.append(spr)
-        print(self.sprites)
+        name, ok = QInputDialog().getText(self, "Create sprite", "Sprite name:",
+                                          QLineEdit.Normal, "unnamed")
+
+        if name and ok:
+            spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
+
+            it = QListWidgetSprite(spr)
+            self.spritesList.addItem(it)
+
+            spr.QListItemRef = it
+            self.sprites.append(spr)
 
     def open(self):
-        fileName,_ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File",
-                QtCore.QDir.currentPath())
+        fileName,_ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
         if fileName:
             self.openFile(fileName)
 
     def openFile(self, fileName):
-        image = QtGui.QImage(fileName)
+        image = QImage(fileName)
         if image.isNull():
-            QtWidgets.QMessageBox.information(self, "Image Viewer",
-                    "Cannot load %s." % fileName)
+            QMessageBox.information(self, self.windowTitle, f"Cannot load {fileName}.")
             return
 
-        self.imageLabel.setPixmap(QtGui.QPixmap.fromImage(image))
+        self.imageLabel.setPixmap(QPixmap.fromImage(image))
         self.scaleFactor = 1.0
+        self.imageLabel.adjustSize()
 
-        self.printAct.setEnabled(True)
-        self.fitToWindowAct.setEnabled(True)
-        self.updateActions()
-
-        if not self.fitToWindowAct.isChecked():
-            self.imageLabel.adjustSize()
-
-    def print_(self):
-        dialog = QtWidgets.QPrintDialog(self.printer, self)
-        if dialog.exec_():
-            painter = QtWidgets.QPainter(self.printer)
-            rect = painter.viewport()
-            size = self.imageLabel.pixmap().size()
-            size.scale(rect.size(), QtCore.Qt.KeepAspectRatio)
-            painter.setViewport(rect.x(), rect.y(), size.width(), size.height())
-            painter.setWindow(self.imageLabel.pixmap().rect())
-            painter.drawPixmap(0, 0, self.imageLabel.pixmap())
+    def save(self):
+        self.writeStylesheet()
 
     def zoomIn(self):
         self.scaleImage(1.25)
@@ -141,80 +245,107 @@ class ImageViewer(QtWidgets.QMainWindow):
         self.imageLabel.adjustSize()
         self.scaleFactor = 1.0
 
-    def fitToWindow(self):
-        fitToWindow = self.fitToWindowAct.isChecked()
-        self.scrollArea.setWidgetResizable(fitToWindow)
-        if not fitToWindow:
-            self.normalSize()
-
-        self.updateActions()
-
     def about(self):
-        QtWidgets.QMessageBox.about(self, "About Image Viewer",
-                "<p>The <b>Image Viewer</b> example shows how to combine "
-                "QLabel and QScrollArea to display an image. QLabel is "
-                "typically used for displaying text, but it can also display "
-                "an image. QScrollArea provides a scrolling view around "
-                "another widget. If the child widget exceeds the size of the "
-                "frame, QScrollArea automatically provides scroll bars.</p>"
-                "<p>The example demonstrates how QLabel's ability to scale "
-                "its contents (QLabel.scaledContents), and QScrollArea's "
-                "ability to automatically resize its contents "
-                "(QScrollArea.widgetResizable), can be used to implement "
-                "zooming and scaling features.</p>"
-                "<p>In addition the example shows how to use QPainter to "
-                "print an image.</p>")
+        QMessageBox.about(self, "About",
+                "<b>RCSS Sprite Editor</b>"
+                "<p>"
+                "<p>By svenvvv, <a href=\"https://github.com/svenvvv\">Github</a></p>"
+                "WIP sprite editor for RmlUi spritesheets"
+                "</p>"
+                "<br><br><b>License</b>"
+                "<p>"
+                "This program is free software: you can redistribute it and/or modify "
+                "it under the terms of the GNU General Public License as published by "
+                "the Free Software Foundation, version 3."
+                "<br><br>"
+                "This program is distributed in the hope that it will be useful, but "
+                "WITHOUT ANY WARRANTY; without even the implied warranty of "
+                "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU "
+                "General Public License for more details."
+                "<br><br>"
+                "You should have received a copy of the GNU General Public License "
+                "along with this program. If not, see <http://www.gnu.org/licenses/>."
+                "</p>")
 
     def createActions(self):
-        self.openAct = QtWidgets.QAction("&Open...", self, shortcut="Ctrl+O",
+        self.openAct = QAction("&Open...", self, shortcut="Ctrl+O",
                 triggered=self.open)
+        self.openAct.setIcon(QIcon.fromTheme("document-open"))
 
-        self.printAct = QtWidgets.QAction("&Print...", self, shortcut="Ctrl+P",
-                enabled=False, triggered=self.print_)
+        self.saveAct = QAction("&Save...", self, shortcut="Ctrl+S",
+                triggered=self.save)
+        self.saveAct.setIcon(QIcon.fromTheme("document-save"))
 
-        self.exitAct = QtWidgets.QAction("E&xit", self, shortcut="Ctrl+Q",
+        self.exitAct = QAction("E&xit", self, shortcut="Ctrl+Q",
                 triggered=self.close)
+        self.exitAct.setIcon(QIcon.fromTheme("window-close"))
 
-        self.zoomInAct = QtWidgets.QAction("Zoom &In (25%)", self,
-                shortcut="Ctrl++", enabled=False, triggered=self.zoomIn)
+        self.zoomInAct = QAction("Zoom &In (25%)", self,
+                shortcut="Ctrl++", triggered=self.zoomIn)
+        self.zoomInAct.setIcon(QIcon.fromTheme("zoom-in"))
 
-        self.zoomOutAct = QtWidgets.QAction("Zoom &Out (25%)", self,
-                shortcut="Ctrl+-", enabled=False, triggered=self.zoomOut)
+        self.zoomOutAct = QAction("Zoom &Out (25%)", self,
+                shortcut="Ctrl+-", triggered=self.zoomOut)
+        self.zoomOutAct.setIcon(QIcon.fromTheme("zoom-out"))
 
-        self.normalSizeAct = QtWidgets.QAction("&Normal Size", self,
-                shortcut="Ctrl+S", enabled=False, triggered=self.normalSize)
+        self.normalSizeAct = QAction("&Normal Size", self,
+                shortcut="Ctrl+Z", triggered=self.normalSize)
+        self.normalSizeAct.setIcon(QIcon.fromTheme("zoom-original"))
 
-        self.fitToWindowAct = QtWidgets.QAction("&Fit to Window", self,
-                enabled=False, checkable=True, shortcut="Ctrl+F",
-                triggered=self.fitToWindow)
+        self.drawRectsAct = QAction("Draw sprite out&lines", self, checkable=True)
+        self.drawRectsAct.setChecked(True)
+        self.drawNamesAct = QAction("Draw spri&te names", self, checkable=True)
+        self.drawDiagonalsAct = QAction("Draw sprite &diagonals", self, checkable=True)
 
-        self.aboutAct = QtWidgets.QAction("&About", self, triggered=self.about)
+        self.aboutAct = QAction("&About", self, triggered=self.about)
 
     def createMenus(self):
-        self.fileMenu = QtWidgets.QMenu("&File", self)
+        self.fileMenu = QMenu("&File", self)
         self.fileMenu.addAction(self.openAct)
-        self.fileMenu.addAction(self.printAct)
+        self.fileMenu.addAction(self.saveAct)
         self.fileMenu.addSeparator()
         self.fileMenu.addAction(self.exitAct)
 
-        self.viewMenu = QtWidgets.QMenu("&View", self)
+        self.viewMenu = QMenu("&View", self)
         self.viewMenu.addAction(self.zoomInAct)
         self.viewMenu.addAction(self.zoomOutAct)
         self.viewMenu.addAction(self.normalSizeAct)
         self.viewMenu.addSeparator()
-        self.viewMenu.addAction(self.fitToWindowAct)
+        self.viewMenu.addAction(self.drawRectsAct)
+        self.viewMenu.addAction(self.drawNamesAct)
+        self.viewMenu.addAction(self.drawDiagonalsAct)
 
-        self.helpMenu = QtWidgets.QMenu("&Help", self)
+        self.helpMenu = QMenu("&Help", self)
         self.helpMenu.addAction(self.aboutAct)
 
         self.menuBar().addMenu(self.fileMenu)
         self.menuBar().addMenu(self.viewMenu)
         self.menuBar().addMenu(self.helpMenu)
 
-    def updateActions(self):
-        self.zoomInAct.setEnabled(not self.fitToWindowAct.isChecked())
-        self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
-        self.normalSizeAct.setEnabled(not self.fitToWindowAct.isChecked())
+        self.ctxEditMenu = QMenu(self)
+
+        editAction = QAction('Edit', self, triggered=self.ctxEditEdit)
+        editAction.setIcon(QIcon.fromTheme("document-properties"))
+        self.ctxEditMenu.addAction(editAction)
+
+        deleteAction = QAction('Delete', self, triggered=self.ctxEditDelete)
+        deleteAction.setIcon(QIcon.fromTheme("edit-delete"))
+        self.ctxEditMenu.addAction(deleteAction)
+
+    def ctxEditEdit(self):
+        ed = SpriteEditModal()
+        # ed.show()
+        # ed.exec_()
+
+    def ctxEditDelete(self):
+        s = self.editSprite
+        if s.QListItemRef:
+            lw = s.QListItemRef.listWidget()
+            lw.takeItem(lw.row(s.QListItemRef))
+
+        self.sprites.remove(self.editSprite)
+        self.editSprite = None
+        self.spritesList.setCurrentItem(None)
 
     def scaleImage(self, factor):
         self.scaleFactor *= factor
@@ -236,7 +367,7 @@ if __name__ == '__main__':
 
     import sys
 
-    app = QtWidgets.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     imageViewer = ImageViewer()
     imageViewer.openFile("/home/admin/projects/mythos/data/gui/invader.png")
     imageViewer.show()

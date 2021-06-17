@@ -1,6 +1,6 @@
-from PySide2 import QtCore
+from PySide2 import QtCore, QtGui
 from PySide2.QtWidgets import QLabel
-from PySide2.QtGui import QColor, QBrush, QPen, QPainter, QPaintEvent, QFontMetrics
+from PySide2.QtGui import QColor, QBrush, QPen, QPainter, QPaintEvent, QFontMetrics, QTransform
 from PySide2.QtCore import Qt, QRect, QPoint
 
 class ImageSelect(QLabel):
@@ -15,6 +15,8 @@ class ImageSelect(QLabel):
     textBgBrush = QBrush(Qt.white)
     selLinePen = QPen(Qt.black, 2)
 
+    flipY = True
+
     def __init__(self):
         super().__init__()
 
@@ -23,6 +25,14 @@ class ImageSelect(QLabel):
         self.selRectBlackLinePen.setDashPattern(selDashes)
         self.selRectWhiteLinePen = QPen(Qt.white, 1, Qt.CustomDashLine)
         self.selRectWhiteLinePen.setDashPattern(list(reversed(selDashes)))
+
+    def setPixmap(self, pixmap):
+        tr = QTransform()
+        tr.scale(1.0, -1.0)
+
+        r = super().setPixmap(pixmap.transformed(tr))
+
+        return r
 
     def paintEvent(self, evt):
         super().paintEvent(evt)
@@ -76,7 +86,10 @@ class ImageSelect(QLabel):
 
             painter.drawText(text_x + 3, text_y - 3, dim_text)
 
-        self.paintFinished.emit(painter)
+        # NOTE: don't emit paintFinished when selecting, causes too much clutter :(
+        if not self.selection_start:
+            self.paintFinished.emit(painter)
+
         painter.end()
 
     def _transformPoint(self, p):
@@ -96,7 +109,10 @@ class ImageSelect(QLabel):
                 self.selection_start = None
                 self.update()
         elif evt.buttons() == QtCore.Qt.RightButton:
-            self.contextMenu.emit(self._transformPoint(evt.pos()))
+            if self.selection_start:
+                self.selection_start = None
+            else:
+                self.contextMenu.emit(self._transformPoint(evt.pos()))
 
     def mouseMoveEvent(self, evt):
         self.cursor_pos = self._transformPoint(evt.pos())
