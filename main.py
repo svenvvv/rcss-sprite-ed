@@ -45,7 +45,7 @@ class ImageViewer(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.dockWidget)
 
         self.imageLabel.rectSelected.connect(lambda r: self.createSprite(r))
-        self.imageLabel.paintFinished.connect(lambda p: self.paintSprites(p))
+        self.imageLabel.paintStarted.connect(self.paintSprites)
         self.imageLabel.contextMenu.connect(lambda p: self.showContextMenu(p))
 
         self.imageLabel.setMouseTracking(True)
@@ -296,6 +296,9 @@ class ImageViewer(QMainWindow):
         self.drawRectsAct.setChecked(True)
         self.drawNamesAct = QAction("Draw spri&te names", self, checkable=True)
         self.drawDiagonalsAct = QAction("Draw sprite &diagonals", self, checkable=True)
+        self.drawPrevRectsOnDrawAct = QAction("Draw other sprites when creating a new sprite", self,
+                                              checkable=True, triggered=self.changeDrawPrevRectsOnDrawAct)
+        self.drawPrevRectsOnDrawAct.setChecked(True)
 
         self.aboutAct = QAction("&About", self, triggered=self.about)
 
@@ -314,6 +317,7 @@ class ImageViewer(QMainWindow):
         self.viewMenu.addAction(self.drawRectsAct)
         self.viewMenu.addAction(self.drawNamesAct)
         self.viewMenu.addAction(self.drawDiagonalsAct)
+        self.viewMenu.addAction(self.drawPrevRectsOnDrawAct)
 
         self.helpMenu = QMenu("&Help", self)
         self.helpMenu.addAction(self.aboutAct)
@@ -331,6 +335,14 @@ class ImageViewer(QMainWindow):
         deleteAction = QAction('Delete', self, triggered=self.ctxEditDelete)
         deleteAction.setIcon(QIcon.fromTheme("edit-delete"))
         self.ctxEditMenu.addAction(deleteAction)
+
+    def changeDrawPrevRectsOnDrawAct(self):
+        if self.drawPrevRectsOnDrawAct.isChecked():
+            self.imageLabel.paintStarted.connect(self.paintSprites)
+            self.imageLabel.paintFinished.disconnect(self.paintSprites)
+        else:
+            self.imageLabel.paintStarted.disconnect(self.paintSprites)
+            self.imageLabel.paintFinished.connect(self.paintSprites)
 
     def ctxEditEdit(self):
         ed = SpriteEditModal()

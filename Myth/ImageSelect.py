@@ -5,6 +5,7 @@ from PySide2.QtCore import Qt, QRect, QPoint
 
 class ImageSelect(QLabel):
     paintFinished = QtCore.Signal(QPaintEvent)
+    paintStarted = QtCore.Signal(QPaintEvent)
     rectSelected = QtCore.Signal(QPainter)
     contextMenu = QtCore.Signal(QPoint)
 
@@ -39,6 +40,8 @@ class ImageSelect(QLabel):
 
         painter = QPainter(self)
         painter.scale(*self.scale)
+
+        self.paintStarted.emit(painter)
 
         if self.cursor_pos:
             # Paint aiming lines
@@ -86,7 +89,6 @@ class ImageSelect(QLabel):
 
             painter.drawText(text_x + 3, text_y - 3, dim_text)
 
-        # NOTE: don't emit paintFinished when selecting, causes too much clutter :(
         if not self.selection_start:
             self.paintFinished.emit(painter)
 
