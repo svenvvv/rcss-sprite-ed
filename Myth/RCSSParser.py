@@ -27,17 +27,26 @@ class RCSSParser(tinycss.CSS21Parser):
 
     def parse_spritesheet_declarations(self, input_decls):
         spritesheet_reserved_props = [ "src", "resolution" ]
+        spritesheet_reserved_props_convert = [ None, int ]
         props = dict()
         decls = []
         errors = []
 
         for d in input_decls:
-            if d.name in spritesheet_reserved_props:
-                # NOTE: Since all the reserved props are a single value then concat every token
+            # A bit of a HACK, in the try block we're checking if it's a reserved prop,
+            # which throws on failure and then gets parsed as a regular property ;)
+            try:
+                # NOTE list.index() throws ValueError if value not found
+                ridx = spritesheet_reserved_props.index(d.name)
+                # Since all the reserved props are a single value then concat every token
                 # that belongs to these props.
                 s = "".join(list(map(lambda v: str(v.value), d.value)))
-                props[d.name] = s
-            else:
+
+                if spritesheet_reserved_props_convert[ridx]:
+                    props[d.name] = spritesheet_reserved_props_convert[ridx](s)
+                else:
+                    props[d.name] = s
+            except ValueError:
                 sprite_props = []
                 for t in d.value:
                     if t.type == "S":
