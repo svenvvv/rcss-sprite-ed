@@ -6,7 +6,7 @@ from Myth.UiLoader import UiLoader
 
 class SpriteEditModal(QDialog):
     def __init__(self, sprite=None, parent=None):
-        QDialog.__init__(self, parent)
+        QDialog.__init__(self)
         UiLoader.load_ui("ui/edit.ui", self)
 
         self.parent = parent

@@ -104,6 +104,9 @@ class MainWindow(QMainWindow):
         cancelAction.setIcon(QIcon.fromTheme("go-previous"))
         self.ctxRedrawMenu.addAction(cancelAction)
 
+    def updateTitle(self):
+        self.setWindowTitle(f"{self.windowTitle} - {self.css.name}")
+
     def addSprite(self, spr):
         it = QListWidgetSprite(spr)
         self.spritesList.addItem(it)
@@ -150,7 +153,7 @@ class MainWindow(QMainWindow):
 
         basepath = os.path.dirname(filename)
         self.openImage(basepath + "/" + self.css.props["src"])
-
+        self.updateTitle()
         self.statusBar().showMessage(f"Successfully loaded stylesheet {filename} with {len(self.css.declarations)} sprites")
 
 
