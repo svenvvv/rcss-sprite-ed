@@ -40,6 +40,9 @@ class ImageSelect(QLabel):
     def paintEvent(self, evt):
         super().paintEvent(evt)
 
+        if not self.pixmap():
+            return
+
         painter = QPainter(self)
         painter.scale(*self.scale)
 
