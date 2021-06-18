@@ -1,3 +1,5 @@
+import os
+
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
@@ -20,6 +22,7 @@ class MainWindow(QMainWindow):
     css = None
     sprites = []
     selectedSprite = None
+    redrawingSprite = None
     windowTitle = "RCSS Spritesheet Editor"
     scale = 1.0
 
@@ -40,8 +43,9 @@ class MainWindow(QMainWindow):
         self.scrollArea.setWidget(self.imageSelect)
         self.scrollArea.setWidgetResizable(False)
 
-        self.imageSelect.rectSelected.connect(self.createSprite)
-        self.imageSelect.paintStarted.connect(self.paintSprites)
+        self.imageSelect.rectStarted.connect(self._cb_spriteStarted)
+        self.imageSelect.rectFinished.connect(self._cb_spriteFinished)
+        self.imageSelect.paintStarted.connect(self._cb_paintStarted)
         self.imageSelect.contextMenu.connect(self.tryOpenCtxMenu)
 
     def _setupActions(self):
@@ -67,28 +71,40 @@ class MainWindow(QMainWindow):
 
         def cb_edit():
             ed = SpriteEditModal(self.selectedSprite, self)
-            print(ed)
+
+        def cb_redraw():
+            s = self.selectedSprite
+            self.redrawingSprite = s
+            self.deleteSprite(s)
+            self.statusBar().showMessage(f"Redrawing sprite {s.name}...")
 
         def cb_delete():
             s = self.selectedSprite
-            if s.QListItemRef:
-                lw = s.QListItemRef.listWidget()
-                lw.takeItem(lw.row(s.QListItemRef))
-            self.sprites.remove(self.selectedSprite)
-            self.selectedSprite = None
-            self.spritesList.setCurrentItem(None)
+            self.deleteSprite(s)
 
         editAction = QAction('Edit', self, triggered=cb_edit)
         editAction.setIcon(QIcon.fromTheme("document-properties"))
         self.ctxEditMenu.addAction(editAction)
 
+        redrawAction = QAction('Redraw', self, triggered=cb_redraw)
+        redrawAction.setIcon(QIcon.fromTheme("list-add"))
+        self.ctxEditMenu.addAction(redrawAction)
+
         deleteAction = QAction('Delete', self, triggered=cb_delete)
         deleteAction.setIcon(QIcon.fromTheme("edit-delete"))
         self.ctxEditMenu.addAction(deleteAction)
 
-    def loadStylesheet(self, filename):
-        import os
+    def deleteSprite(self, s):
+        if s.QListItemRef:
+            lw = s.QListItemRef.listWidget()
+            lw.takeItem(lw.row(s.QListItemRef))
+            self.sprites.remove(s)
+            self.selectedSprite = None
+            self.spritesList.setCurrentItem(None)
+            self.statusBar().showMessage(f"Deleted sprite {s.name}")
 
+
+    def loadStylesheet(self, filename):
         parser = RCSSParser()
         css = parser.parse_stylesheet_file(filename)
 
@@ -115,13 +131,16 @@ class MainWindow(QMainWindow):
         basepath = os.path.dirname(filename)
         self.openImage(basepath + "/" + self.css.props["src"])
 
+        self.statusBar().showMessage(f"Successfully loaded stylesheet {filename} with {len(self.css.declarations)} sprites")
+
+
     def saveStylesheet(self):
         ss = self.css
 
         print(f"@stylesheet {ss.name}")
         print("{")
-        print(f"\tsrc: {ss.props['src']}")
-        print(f"\tresolution: {ss.props['resolution']}x")
+        print(f"\tsrc: {ss.props['src']};")
+        print(f"\tresolution: {ss.props['resolution']}x;")
 
         for s in self.sprites:
             print(f"\t{s.toRCSS()}")
@@ -187,55 +206,18 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.error(self, self.windowTitle, "Sprite is missing list ref!")
 
-    def paintSprites(self, painter):
-        if not self.actionDrawSpriteOutlines.isChecked():
-            return
-
-        for spr in self.sprites:
-            rect = spr.rect
-            x = rect.x()
-            y = rect.y()
-            w = rect.width()
-            h = rect.height()
-
-            if spr.highlight:
-                painter.setPen(QPen(Qt.red, 3))
-            else:
-                painter.setPen(QPen(Qt.black))
-
-            painter.drawRect(rect)
-
-            if self.actionDrawSpriteDiagonals.isChecked():
-                painter.drawLine(x, y, x + w, y + h)
-                painter.drawLine(x + w, y, x, y + h)
-
-            if self.actionDrawSpriteNames.isChecked():
-                text_fm = QFontMetrics(painter.font())
-                text_width = text_fm.width(spr.name)
-                painter.drawText(x + w/2 - text_width/2, y + h/2, spr.name)
-
-    def createSprite(self, r):
-        name, ok = QInputDialog().getText(self, "Create sprite", "Sprite name:",
-                                          QLineEdit.Normal, "unnamed")
-
-        if name and ok:
-            spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-
-            it = QListWidgetSprite(spr)
-            self.spritesList.addItem(it)
-
-            spr.QListItemRef = it
-            self.sprites.append(spr)
-
-    def openImage(self, fileName):
-        image = QImage(fileName)
+    def openImage(self, filename):
+        image = QImage(filename)
         if image.isNull():
-            QMessageBox.information(self, self.windowTitle, f"Cannot load {fileName}.")
-            exit(1)
+            QMessageBox.information(self, self.windowTitle, f"Cannot load {filename}.")
+            return False
 
-        self.imageSelect.setPixmap(QPixmap.fromImage(image))
+        pixmap = QPixmap.fromImage(image)
+        self.imageSelect.setPixmap(pixmap)
         self.scale = 1.0
         self.imageSelect.adjustSize()
+        self.statusBar().showMessage(f"Successfully loaded image {filename} ({pixmap.width()}x{pixmap.height()})")
+        return True
 
     def scaleImage(self, factor):
         self.scale *= factor
@@ -251,15 +233,69 @@ class MainWindow(QMainWindow):
         val = factor * scrollBar.value() + ((factor - 1) * scrollBar.pageStep()/2)
         scrollBar.setValue(int(val))
 
+    def _cb_paintStarted(self, painter):
+        if not self.actionDrawSpriteOutlines.isChecked():
+            return
+
+        for spr in self.sprites:
+            rect = spr.rect
+            x = rect.x()
+            y = rect.y()
+            w = rect.width()
+            h = rect.height()
+
+            if spr == self.selectedSprite:
+                painter.setPen(QPen(Qt.red, 3))
+            else:
+                painter.setPen(QPen(Qt.black))
+
+            painter.drawRect(rect)
+
+            if self.actionDrawSpriteDiagonals.isChecked():
+                painter.drawLine(x, y, x + w, y + h)
+                painter.drawLine(x + w, y, x, y + h)
+
+            if self.actionDrawSpriteNames.isChecked():
+                text_fm = QFontMetrics(painter.font())
+                text_width = text_fm.width(spr.name)
+                painter.drawText(x + w/2 - text_width/2, y + h/2, spr.name)
+
+    def _cb_spriteStarted(self):
+        self.selectedSprite = None
+
+    def _cb_spriteFinished(self, r):
+        name = None
+
+        if self.redrawingSprite:
+            name = self.redrawingSprite.name
+            self.redrawingSprite = None
+        else:
+            name, ok = QInputDialog().getText(self, "Create sprite", "Sprite name:",
+                                              QLineEdit.Normal, "unnamed")
+            if not ok:
+                self.statusBar().showMessage("Failed to get name for sprite")
+                return
+
+        if name:
+            spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
+
+            it = QListWidgetSprite(spr)
+            self.spritesList.addItem(it)
+
+            spr.QListItemRef = it
+            self.sprites.append(spr)
+            self.statusBar().showMessage(f"Created sprite {name} ({r.x()},{r.y()},{r.width()},{r.height()})")
+
     def _cb_actionReplaceImage(self):
-        pass
+        filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath())
+        if filename and self.openImage(filename):
+            self.css.props["src"] = os.path.basename(filename)
 
     def _cb_actionSetResolution(self):
         res, ok = QInputDialog().getInt(self, "Set resolution", "New resolution:",
                                     int(self.css.props["resolution"]), minValue=1)
         if res and ok:
-            print(res)
-
+            self.css.props["resolution"] = res
 
     def _cb_spritesListOpenCtxMenu(self, pos):
         it = self.spritesList.selectedItems()[0]
@@ -269,20 +305,15 @@ class MainWindow(QMainWindow):
     def _cb_spritesListSelectItem(self):
         sel = self.spritesList.selectedItems()
         if len(sel) > 0:
-            ourSprite = self.findSpriteByQItem(sel[0])
-            if ourSprite:
-                for s in self.sprites:
-                    s.highlight = False
-                ourSprite.highlight = True
+            spr = self.findSpriteByQItem(sel[0])
+            if spr:
+                self.selectedSprite = spr
                 self.repaint()
-        else:
-            for s in self.sprites:
-                s.highlight = False
 
     def _cb_actionOpen(self):
-        fileName,_ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
-        if fileName:
-            self.openImage(fileName)
+        filename,_ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
+        if filename:
+            self.openImage(filename)
 
     def _cb_actionSave(self):
         self.saveStylesheet()
@@ -322,8 +353,8 @@ class MainWindow(QMainWindow):
 
     def _cb_actionDrawSpritesDuringSketching(self):
         if self.actionDrawSpritesDuringSketching.isChecked():
-            self.imageSelect.paintStarted.connect(self.paintSprites)
-            self.imageSelect.paintFinished.disconnect(self.paintSprites)
+            self.imageSelect.paintStarted.connect(self._cb_paintStarted)
+            self.imageSelect.paintFinished.disconnect(self._cb_paintStarted)
         else:
-            self.imageSelect.paintStarted.disconnect(self.paintSprites)
-            self.imageSelect.paintFinished.connect(self.paintSprites)
+            self.imageSelect.paintStarted.disconnect(self._cb_paintStarted)
+            self.imageSelect.paintFinished.connect(self._cb_paintStarted)

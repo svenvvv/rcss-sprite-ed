@@ -6,7 +6,8 @@ from PySide2.QtWidgets import *
 class ImageSelect(QLabel):
     paintFinished = QtCore.Signal(QPaintEvent)
     paintStarted = QtCore.Signal(QPaintEvent)
-    rectSelected = QtCore.Signal(QPainter)
+    rectFinished = QtCore.Signal(QPainter)
+    rectStarted = QtCore.Signal(QPoint)
     contextMenu = QtCore.Signal(QPoint)
 
     scale = (1.0, 1.0)
@@ -101,13 +102,14 @@ class ImageSelect(QLabel):
     def mousePressEvent(self, evt):
         if evt.buttons() == QtCore.Qt.LeftButton:
             if not self.selection_start:
+                self.rectStarted.emit(evt.pos())
                 self.selection_start = self._transformPoint(evt.pos())
             else:
                 cur = self.selection_start
                 end = self._transformPoint(evt.pos())
                 rect = QRect(cur.x(), cur.y(),
                              end.x() - cur.x(), end.y() - cur.y())
-                self.rectSelected.emit(rect)
+                self.rectFinished.emit(rect)
                 self.selection_start = None
                 self.update()
         elif evt.buttons() == QtCore.Qt.RightButton:

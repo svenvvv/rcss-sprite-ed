@@ -1,7 +1,6 @@
 from PySide2.QtCore import QRect
 
 class Sprite:
-    highlight = False
     QListItemRef = None
     flippedW = False
     flippedH = False
