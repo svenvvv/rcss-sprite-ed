@@ -82,17 +82,37 @@ class MainWindow(QMainWindow):
             s = self.selectedSprite
             self.deleteSprite(s)
 
-        editAction = QAction('Edit', self, triggered=cb_edit)
+        editAction = QAction("Edit", self, triggered=cb_edit)
         editAction.setIcon(QIcon.fromTheme("document-properties"))
         self.ctxEditMenu.addAction(editAction)
 
-        redrawAction = QAction('Redraw', self, triggered=cb_redraw)
+        redrawAction = QAction("Redraw", self, triggered=cb_redraw)
         redrawAction.setIcon(QIcon.fromTheme("list-add"))
         self.ctxEditMenu.addAction(redrawAction)
 
-        deleteAction = QAction('Delete', self, triggered=cb_delete)
+        deleteAction = QAction("Delete", self, triggered=cb_delete)
         deleteAction.setIcon(QIcon.fromTheme("edit-delete"))
         self.ctxEditMenu.addAction(deleteAction)
+
+        def cb_cancel():
+            self.statusBar().showMessage(f"Canceled redrawing sprite {self.redrawingSprite.name}")
+            self.addSprite(self.redrawingSprite)
+            self.redrawingSprite = None
+
+        self.ctxRedrawMenu = QMenu(self)
+        cancelAction = QAction("Cancel redrawing", self, triggered=cb_cancel)
+        cancelAction.setIcon(QIcon.fromTheme("go-previous"))
+        self.ctxRedrawMenu.addAction(cancelAction)
+
+    def addSprite(self, spr):
+        it = QListWidgetSprite(spr)
+        self.spritesList.addItem(it)
+
+        spr.QListItemRef = it
+        self.sprites.append(spr)
+
+        r = spr.rect
+        self.statusBar().showMessage(f"Added sprite {spr.name} ({r.x()},{r.y()},{r.width()},{r.height()})")
 
     def deleteSprite(self, s):
         if s.QListItemRef:
@@ -163,6 +183,9 @@ class MainWindow(QMainWindow):
         self.selectedSprite = sprite
         self.ctxEditMenu.popup(pos)
 
+    def openCtxRedrawMenu(self, pos):
+        self.ctxRedrawMenu.popup(pos)
+
     def openCtxSpriteSelectMenu(self, pos, sprites):
         def selectSpriteFromCtx(act):
             self.selectedSprite = self.findSpriteByName(act.text())
@@ -178,6 +201,13 @@ class MainWindow(QMainWindow):
         menu.popup(pos)
 
     def tryOpenCtxMenu(self, target):
+        # Show the popup at cursor position, not target pos
+        pos = QCursor.pos()
+
+        if self.redrawingSprite:
+            self.openCtxRedrawMenu(pos)
+            return
+
         hit = []
         for spr in self.sprites:
             if spr.aabbTest(target):
@@ -185,9 +215,6 @@ class MainWindow(QMainWindow):
 
         if len(hit) == 0:
             return
-
-        # Show the popup at cursor position, not target pos
-        pos = QCursor.pos()
 
         if len(hit) > 1:
             print("Multiple hits: ", hit)
@@ -278,13 +305,7 @@ class MainWindow(QMainWindow):
 
         if name:
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-
-            it = QListWidgetSprite(spr)
-            self.spritesList.addItem(it)
-
-            spr.QListItemRef = it
-            self.sprites.append(spr)
-            self.statusBar().showMessage(f"Created sprite {name} ({r.x()},{r.y()},{r.width()},{r.height()})")
+            self.addSprite(spr)
 
     def _cb_actionReplaceImage(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath())
