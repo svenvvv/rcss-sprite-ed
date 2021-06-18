@@ -1,7 +1,7 @@
 from PySide2 import QtCore, QtGui
-from PySide2.QtWidgets import QLabel
-from PySide2.QtGui import QColor, QBrush, QPen, QPainter, QPaintEvent, QFontMetrics, QTransform
-from PySide2.QtCore import Qt, QRect, QPoint
+from PySide2.QtGui import *
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
 
 class ImageSelect(QLabel):
     paintFinished = QtCore.Signal(QPaintEvent)
@@ -18,8 +18,12 @@ class ImageSelect(QLabel):
 
     flipY = True
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.setScaledContents(True)
+        self.setMouseTracking(True)
 
         selDashes = [1, 4]
         self.selRectBlackLinePen = QPen(Qt.black, 1, Qt.CustomDashLine)
@@ -30,10 +34,7 @@ class ImageSelect(QLabel):
     def setPixmap(self, pixmap):
         tr = QTransform()
         tr.scale(1.0, -1.0)
-
-        r = super().setPixmap(pixmap.transformed(tr))
-
-        return r
+        return super().setPixmap(pixmap.transformed(tr))
 
     def paintEvent(self, evt):
         super().paintEvent(evt)
@@ -95,8 +96,7 @@ class ImageSelect(QLabel):
         painter.end()
 
     def _transformPoint(self, p):
-        r = QPoint(p.x() / self.scale[0], p.y() / self.scale[1])
-        return r
+        return QPoint(p.x() / self.scale[0], p.y() / self.scale[1])
 
     def mousePressEvent(self, evt):
         if evt.buttons() == QtCore.Qt.LeftButton:

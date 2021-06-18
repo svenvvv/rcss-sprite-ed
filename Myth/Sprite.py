@@ -39,6 +39,8 @@ class Sprite:
         w = self.rect.width()
         h = self.rect.height()
 
+        # NOTE: if we shifted the image during image loading then shift it back, as
+        # otherwise mirrored images will be wrong in RmlUI.
         if self.flippedW:
             x -= w
             w = -w
