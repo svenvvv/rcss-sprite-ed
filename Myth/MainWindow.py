@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         self._setupActions()
         self._setupMenus()
 
-        self.loadStylesheet("../../data/gui/invader.rcss")
+        # self.loadStylesheet("../../data/gui/invader.rcss")
 
         self.show()
 
@@ -160,14 +160,20 @@ class MainWindow(QMainWindow):
     def saveStylesheet(self):
         ss = self.css
 
-        print(f"@stylesheet {ss.name}")
-        print("{")
-        print(f"\tsrc: {ss.props['src']};")
-        print(f"\tresolution: {ss.props['resolution']}x;")
+        ret = f"@stylesheet {ss.name}\n"
+        ret += "{\n"
+
+        ret += f"\tsrc: {ss.props['src']};\n"
+        ret += f"\tresolution: {ss.props['resolution']}x;\n"
+
+        ret += "\n"
 
         for s in self.sprites:
-            print(f"\t{s.toRCSS()}")
-        print("}")
+            ret += f"\t{s.toRCSS()}\n"
+
+        ret += "}\n"
+
+        return ret
 
     def repaint(self):
         self.imageSelect.update()
@@ -337,10 +343,12 @@ class MainWindow(QMainWindow):
     def _cb_actionOpen(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
         if filename:
-            self.openImage(filename)
+            self.loadStylesheet(filename)
 
     def _cb_actionSave(self):
-        self.saveStylesheet()
+        ss = self.saveStylesheet()
+        res, ok = QInputDialog().getMultiLineText(self, "Output",
+                                                  "Saving into RCSS file isn't implemented yet.", ss)
 
     def _cb_actionZoomIn(self):
         self.scaleImage(1.25)

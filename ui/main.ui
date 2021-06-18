@@ -254,6 +254,9 @@
    </property>
   </action>
   <action name="actionSaveAs">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset theme="document-save-as">
      <normaloff>.</normaloff>.</iconset>
