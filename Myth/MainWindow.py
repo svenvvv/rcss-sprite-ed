@@ -7,6 +7,7 @@ from Myth.ImageSelect import ImageSelect
 from Myth.Sprite import Sprite
 from Myth.RCSSParser import RCSSParser
 from Myth.SpriteEditModal import SpriteEditModal
+from Myth.UiLoader import UiLoader
 
 
 class QListWidgetSprite(QListWidgetItem):
@@ -15,37 +16,10 @@ class QListWidgetSprite(QListWidgetItem):
         self.sprite = sprite
 
 
-# Class UiLoader was found online.
-# Slightly modified to make load_ui() a static method.
-# Posted by Andy Davis on 3 Oct 2017.
-# Source: https://robonobodojo.wordpress.com/2017/10/03/loading-a-pyside-ui-via-a-class/
-class UiLoader(QUiLoader):
-    def __init__(self, base_instance):
-        QUiLoader.__init__(self, base_instance)
-        self.base_instance = base_instance
-
-    def createWidget(self, class_name, parent=None, name=''):
-        if parent is None and self.base_instance:
-            return self.base_instance
-        else:
-            # create a new widget for child widgets
-            widget = QUiLoader.createWidget(self, class_name, parent, name)
-            if self.base_instance:
-                setattr(self.base_instance, name, widget)
-            return widget
-
-    @staticmethod
-    def load_ui(file, base_instance=None):
-        loader = UiLoader(base_instance)
-        widget = loader.load(file)
-        QMetaObject.connectSlotsByName(widget)
-        return widget
-
-
 class MainWindow(QMainWindow):
     css = None
     sprites = []
-    editSprite = None
+    selectedSprite = None
     windowTitle = "RCSS Spritesheet Editor"
     scale = 1.0
 
@@ -75,6 +49,10 @@ class MainWindow(QMainWindow):
         self.actionSave.triggered.connect(self._cb_actionSave)
         self.actionSaveAs.triggered.connect(self._cb_actionSave)
         self.actionQuit.triggered.connect(self.close)
+
+        self.actionReplaceImage.triggered.connect(self._cb_actionReplaceImage)
+        self.actionSetResolution.triggered.connect(self._cb_actionSetResolution)
+
         self.actionZoomIn.triggered.connect(self._cb_actionZoomIn)
         self.actionZoomOut.triggered.connect(self._cb_ZoomOut)
         self.actionZoomReset.triggered.connect(self._cb_actionZoomReset)
@@ -88,15 +66,16 @@ class MainWindow(QMainWindow):
         self.ctxEditMenu = QMenu(self)
 
         def cb_edit():
-            ed = SpriteEditModal()
+            ed = SpriteEditModal(self.selectedSprite, self)
+            print(ed)
 
         def cb_delete():
-            s = self.editSprite
+            s = self.selectedSprite
             if s.QListItemRef:
                 lw = s.QListItemRef.listWidget()
                 lw.takeItem(lw.row(s.QListItemRef))
-            self.sprites.remove(self.editSprite)
-            self.editSprite = None
+            self.sprites.remove(self.selectedSprite)
+            self.selectedSprite = None
             self.spritesList.setCurrentItem(None)
 
         editAction = QAction('Edit', self, triggered=cb_edit)
@@ -162,12 +141,12 @@ class MainWindow(QMainWindow):
                 return s
 
     def openCtxEditMenu(self, sprite, pos):
-        self.editSprite = sprite
+        self.selectedSprite = sprite
         self.ctxEditMenu.popup(pos)
 
     def openCtxSpriteSelectMenu(self, pos, sprites):
         def selectSpriteFromCtx(act):
-            self.editSprite = self.findSpriteByName(act.text())
+            self.selectedSprite = self.findSpriteByName(act.text())
             self.ctxEditMenu.popup(pos)
 
         menu = QMenu(self)
@@ -193,7 +172,7 @@ class MainWindow(QMainWindow):
 
         if len(hit) > 1:
             print("Multiple hits: ", hit)
-            self.editSprite = None
+            self.selectedSprite = None
             self.repaint()
 
             self.openCtxSpriteSelectMenu(pos, hit)
@@ -271,6 +250,16 @@ class MainWindow(QMainWindow):
     def adjustScrollBar(self, scrollBar, factor):
         val = factor * scrollBar.value() + ((factor - 1) * scrollBar.pageStep()/2)
         scrollBar.setValue(int(val))
+
+    def _cb_actionReplaceImage(self):
+        pass
+
+    def _cb_actionSetResolution(self):
+        res, ok = QInputDialog().getInt(self, "Set resolution", "New resolution:",
+                                    int(self.css.props["resolution"]), minValue=1)
+        if res and ok:
+            print(res)
+
 
     def _cb_spritesListOpenCtxMenu(self, pos):
         it = self.spritesList.selectedItems()[0]
