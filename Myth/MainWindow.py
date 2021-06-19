@@ -134,16 +134,24 @@ class MainWindow(QMainWindow):
 
         spr.QListItemRef = it
         self.sprites.append(spr)
-        self.statusBar().showMessage(f"Added sprite {spr.name()} ({spr.x()},{spr.y()},{spr.width()},{spr.height()})")
 
     def deleteSprite(self, s):
+        self.unlinkSprite(s)
+        self.sprites.remove(s)
+        self.spritesList.setCurrentItem(None)
+
+    def unlinkSprite(self, s):
+        """ Unlink from QListItemRef """
         if s.QListItemRef:
             lw = s.QListItemRef.listWidget()
             lw.takeItem(lw.row(s.QListItemRef))
-            self.sprites.remove(s)
-            self.selectedSprite = None
-            self.spritesList.setCurrentItem(None)
-            self.statusBar().showMessage(f"Deleted sprite {s.name()}")
+
+    def deleteAllSprites(self):
+        self.redrawingSprite = None
+        self.selectedSprite = None
+        for s in self.sprites:
+            self.unlinkSprite(s)
+        self.sprites.clear()
 
     def loadStylesheet(self, filename):
         parser = RCSSParser()
@@ -159,6 +167,8 @@ class MainWindow(QMainWindow):
             QMessageBox.error(self, self.windowTitle,
                               f"File contained {len(spritesheets)} spritesheets, currently only one is supported")
             return
+
+        self.deleteAllSprites()
 
         for ss in spritesheets:
             self.css = ss

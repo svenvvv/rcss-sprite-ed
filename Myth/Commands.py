@@ -70,10 +70,13 @@ class CommandCreateSprite(QUndoCommand):
     def redo(self):
         self.win.addSprite(self.sprite)
         self.win.repaint()
+        self.win.statusBar().showMessage(f"Added sprite {self.sprite.name()}")
 
     def undo(self):
         self.win.deleteSprite(self.sprite)
+        self.win.selectedSprite = None
         self.win.repaint()
+        self.win.statusBar().showMessage(f"Deleted sprite {self.sprite.name()}")
 
 class CommandDeleteSprite(QUndoCommand):
     def __init__(self, mainwin, sprite):
@@ -86,11 +89,14 @@ class CommandDeleteSprite(QUndoCommand):
 
     def redo(self):
         self.win.deleteSprite(self.sprite)
+        self.win.selectedSprite = None
         self.win.repaint()
+        self.win.statusBar().showMessage(f"Deleted sprite {self.sprite.name()}")
 
     def undo(self):
         self.win.addSprite(self.sprite)
         self.win.repaint()
+        self.win.statusBar().showMessage(f"Added sprite {self.sprite.name()}")
 
 
 class CommandModifySprite(QUndoCommand):
@@ -124,8 +130,10 @@ class CommandModifySprite(QUndoCommand):
         if self.newName:
             self.sprite.setName(self.newName)
         self.win.repaint()
+        self.win.statusBar().showMessage(f"Modified sprite {self.sprite.name()}")
 
     def undo(self):
         self.sprite.setSize(**self.oldSize)
         self.sprite.setName(self.prevName)
         self.win.repaint()
+        self.win.statusBar().showMessage(f"Un-modified sprite {self.sprite.name()}")
