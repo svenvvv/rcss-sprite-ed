@@ -86,6 +86,7 @@
     <addaction name="separator"/>
     <addaction name="actionReplaceImage"/>
     <addaction name="actionSetResolution"/>
+    <addaction name="actionFlipY"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -99,7 +100,6 @@
     <addaction name="actionDrawSpriteNames"/>
     <addaction name="actionDrawSpriteDiagonals"/>
     <addaction name="actionDrawSpritesDuringSketching"/>
-    <addaction name="actionFlipY"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -359,23 +359,15 @@
     <string>Ctrl+R</string>
    </property>
   </action>
-  <action name="actionFlip_image_Y_axis">
-   <property name="text">
-    <string>Flip image Y-axis</string>
-   </property>
-   <property name="statusTip">
-    <string>Flip the source image on the Y-axis. </string>
-   </property>
-  </action>
   <action name="actionFlipY">
-   <property name="checkable">
-    <bool>true</bool>
+   <property name="icon">
+    <iconset theme="object-flip-vertical"/>
    </property>
    <property name="text">
-    <string>Flip image Y-axis</string>
+    <string>Flip image Y</string>
    </property>
    <property name="statusTip">
-    <string>Flip the source image on the Y-axis.</string>
+    <string>Flip source image on the Y-axis.</string>
    </property>
   </action>
  </widget>
