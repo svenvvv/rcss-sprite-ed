@@ -74,6 +74,7 @@
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
     <addaction name="actionSaveAs"/>
+    <addaction name="actionReload"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -178,6 +179,9 @@
    </property>
   </action>
   <action name="actionReplaceImage">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset theme="insert-image">
      <normaloff>.</normaloff>.</iconset>
@@ -193,6 +197,9 @@
    </property>
   </action>
   <action name="actionSetResolution">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset theme="document-properties">
      <normaloff>.</normaloff>.</iconset>
@@ -360,14 +367,34 @@
    </property>
   </action>
   <action name="actionFlipY">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset theme="object-flip-vertical"/>
    </property>
    <property name="text">
-    <string>Flip image Y</string>
+    <string>Flip image &amp;Y</string>
    </property>
    <property name="statusTip">
     <string>Flip source image on the Y-axis.</string>
+   </property>
+  </action>
+  <action name="actionReload">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="view-refresh"/>
+   </property>
+   <property name="text">
+    <string>&amp;Reload image</string>
+   </property>
+   <property name="statusTip">
+    <string>Reload the RCSS source image.</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
    </property>
   </action>
  </widget>

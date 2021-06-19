@@ -62,3 +62,15 @@ Right-click on any of the list entries to open the "edit" context menu.
 
 TODO. Most actions should be pretty self-explanatory.
 
+**Replacing the source image**
+
+It can be useful to replace the source image while keeping the same sprites
+ in-memory.  For that there is the menu option "Set image", using which you
+ can use another background image.
+
+Combined with the "Redraw" feature, this can be an useful tool for transferring
+sprites onto a new, differently positioned, spritesheet.
+
+NOTE: The program allows the user to load sprites from any directory in
+ the filesystem, but only the filename will be written into the RCSS file.
+

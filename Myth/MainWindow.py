@@ -23,6 +23,7 @@ class QListWidgetSprite(QListWidgetItem):
 
 class MainWindow(QMainWindow):
     css = None
+    basepath = None
     sprites = []
     selectedSprite = None
     redrawingSprite = None
@@ -66,6 +67,7 @@ class MainWindow(QMainWindow):
         self.actionOpen.triggered.connect(self._cb_actionOpen)
         self.actionSave.triggered.connect(self._cb_actionSave)
         self.actionSaveAs.triggered.connect(self._cb_actionSave)
+        self.actionReload.triggered.connect(self._cb_actionReload)
         self.actionQuit.triggered.connect(self.close)
 
         self.actionUndo.triggered.connect(lambda: self.undo.undo())
@@ -180,8 +182,8 @@ class MainWindow(QMainWindow):
                 d.QListItemRef = it
                 self.sprites.append(d)
 
-        basepath = os.path.dirname(filename)
-        self.loadImage(basepath + "/" + self.css.props["src"])
+        self.basepath = os.path.dirname(filename)
+        self.loadImage(self.basepath + "/" + self.css.props["src"])
         self.updateTitle()
         self.statusBar().showMessage(f"Successfully loaded stylesheet {filename} with {len(self.css.declarations)} sprites")
 
@@ -273,7 +275,7 @@ class MainWindow(QMainWindow):
             l.setCurrentItem(it)
             self.openCtxEditMenu(selHit, pos)
         else:
-            QMessageBox.error(self, self.windowTitle, "Sprite is missing list ref!")
+            QMessageBox.information(self, self.windowTitle, "Sprite is missing list ref!")
 
     def loadImage(self, filename):
         image = QImage(filename)
@@ -290,6 +292,10 @@ class MainWindow(QMainWindow):
 
         self.actionSave.setEnabled(True)
         self.actionSaveAs.setEnabled(True)
+        self.actionReplaceImage.setEnabled(True)
+        self.actionSetResolution.setEnabled(True)
+        self.actionFlipY.setEnabled(True)
+        self.actionReload.setEnabled(True)
 
         self.statusBar().showMessage(f"Successfully loaded image {filename} ({pixmap.width()}x{pixmap.height()})")
         return True
@@ -352,6 +358,11 @@ class MainWindow(QMainWindow):
 
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
             CommandCreateSprite(self, spr)
+
+    def _cb_actionReload(self):
+        # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
+        if not self.loadImage(f"{self.basepath}/{self.css.props['src']}"):
+            self.statusBar().showMessage("Image reload failed!")
 
     def _cb_actionReplaceImage(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath())
