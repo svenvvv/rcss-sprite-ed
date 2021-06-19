@@ -100,7 +100,7 @@ class CommandModifySprite(QUndoCommand):
         self.sprite = sprite
 
         self.newName = name
-        self.prevName = sprite.name
+        self.prevName = sprite.name()
 
         self.newSize = {
             "x": x,
@@ -110,10 +110,10 @@ class CommandModifySprite(QUndoCommand):
         }
 
         self.oldSize = {
-            "x": sprite.rect.x(),
-            "y": sprite.rect.y(),
-            "w": sprite.rect.width(),
-            "h": sprite.rect.height()
+            "x": sprite.x(),
+            "y": sprite.y(),
+            "w": sprite.width(),
+            "h": sprite.height()
         }
 
         self.win.undo.push(self)
@@ -121,10 +121,10 @@ class CommandModifySprite(QUndoCommand):
     def redo(self):
         self.sprite.setSize(**self.newSize)
         if self.newName:
-            self.sprite.name = self.newName
+            self.sprite.setName(self.newName)
         self.win.repaint()
 
     def undo(self):
         self.sprite.setSize(**self.oldSize)
-        self.sprite.name = self.prevName
+        self.sprite.setName(self.prevName)
         self.win.repaint()

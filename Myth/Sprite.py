@@ -1,13 +1,21 @@
 from PySide2.QtCore import QRect
 
-class Sprite:
+class Sprite(QRect):
     QListItemRef = None
     flippedW = False
     flippedH = False
 
     def __init__(self, name, x, y, w, h):
-        self.name = name
+        super().__init__()
+
+        self._name = name
         self.setSize(x, y, w, h)
+
+    def name(self):
+        return self._name
+
+    def setName(self, name):
+        self._name = name
 
     def setSize(self, x, y, w, h):
         # If the sprite would have negative w/h then
@@ -20,13 +28,17 @@ class Sprite:
             y += h
             h = abs(h)
             self.flippedH = True
-        self.rect = QRect(x, y, w, h)
+        # self.rect = QRect(x, y, w, h)
+        self.setX(x)
+        self.setY(y)
+        self.setWidth(w)
+        self.setHeight(h)
 
     def aabbTest(self, p):
-        rx = self.rect.x()
-        ry = self.rect.y()
-        rw = self.rect.width()
-        rh = self.rect.height()
+        rx = self.x()
+        ry = self.y()
+        rw = self.width()
+        rh = self.height()
         px = p.x()
         py = p.y()
 
@@ -35,10 +47,10 @@ class Sprite:
         return False
 
     def toRCSS(self):
-        x = self.rect.x()
-        y = self.rect.y()
-        w = self.rect.width()
-        h = self.rect.height()
+        x = self.x()
+        y = self.y()
+        w = self.width()
+        h = self.height()
 
         # NOTE: if we shifted the image during image loading then shift it back, as
         # otherwise mirrored images will be wrong in RmlUI.
@@ -49,4 +61,4 @@ class Sprite:
             y += h
             h = -h
 
-        return f"{self.name}: {x}px {y}px {w}px {h}px;"
+        return f"{self.name()}: {x}px {y}px {w}px {h}px;"

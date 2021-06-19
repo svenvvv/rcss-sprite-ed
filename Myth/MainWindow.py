@@ -17,7 +17,7 @@ from Myth.Commands import *
 
 class QListWidgetSprite(QListWidgetItem):
     def __init__(self, sprite):
-        super().__init__(sprite.name)
+        super().__init__(sprite.name())
         self.sprite = sprite
 
 
@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
         self._setupMenus()
         self._setupUndo()
 
-        # self.loadStylesheet("../../data/gui/invader.rcss")
+        self.loadStylesheet("../../data/gui/invader.rcss")
 
         self.show()
 
@@ -96,7 +96,7 @@ class MainWindow(QMainWindow):
         def cb_redraw():
             s = self.selectedSprite
             self.redrawingSprite = s
-            self.statusBar().showMessage(f"Redrawing sprite {s.name}...")
+            self.statusBar().showMessage(f"Redrawing sprite {s.name()}...")
 
         def cb_delete():
             CommandDeleteSprite(self, self.selectedSprite)
@@ -114,7 +114,7 @@ class MainWindow(QMainWindow):
         self.ctxEditMenu.addAction(deleteAction)
 
         def cb_cancel():
-            self.statusBar().showMessage(f"Canceled redrawing sprite {self.redrawingSprite.name}")
+            self.statusBar().showMessage(f"Canceled redrawing sprite {self.redrawingSprite.name()}")
             self.redrawingSprite = None
 
         self.ctxRedrawMenu = QMenu(self)
@@ -123,7 +123,10 @@ class MainWindow(QMainWindow):
         self.ctxRedrawMenu.addAction(cancelAction)
 
     def updateTitle(self):
-        self.setWindowTitle(f"{self.windowTitle} - {self.css.name}")
+        if self.css and self.css.name:
+            self.setWindowTitle(f"{self.windowTitle} - {self.css.name}")
+        else:
+            self.setWindowTitle(self.windowTitle)
 
     def addSprite(self, spr):
         it = QListWidgetSprite(spr)
@@ -131,9 +134,7 @@ class MainWindow(QMainWindow):
 
         spr.QListItemRef = it
         self.sprites.append(spr)
-
-        r = spr.rect
-        self.statusBar().showMessage(f"Added sprite {spr.name} ({r.x()},{r.y()},{r.width()},{r.height()})")
+        self.statusBar().showMessage(f"Added sprite {spr.name()} ({spr.x()},{spr.y()},{spr.width()},{spr.height()})")
 
     def deleteSprite(self, s):
         if s.QListItemRef:
@@ -142,7 +143,7 @@ class MainWindow(QMainWindow):
             self.sprites.remove(s)
             self.selectedSprite = None
             self.spritesList.setCurrentItem(None)
-            self.statusBar().showMessage(f"Deleted sprite {s.name}")
+            self.statusBar().showMessage(f"Deleted sprite {s.name()}")
 
     def loadStylesheet(self, filename):
         parser = RCSSParser()
@@ -202,7 +203,7 @@ class MainWindow(QMainWindow):
 
     def findSpriteByName(self, name):
         for s in self.sprites:
-            if s.name == name:
+            if s.name() == name:
                 return s
 
     def openCtxEditMenu(self, sprite, pos):
@@ -226,7 +227,7 @@ class MainWindow(QMainWindow):
         menu.hovered.connect(cb_hover)
 
         for spr in sprites:
-            act = QAction(spr.name, self)
+            act = QAction(spr.name(), self)
             menu.addAction(act)
 
         menu.popup(pos)
@@ -300,18 +301,17 @@ class MainWindow(QMainWindow):
             return
 
         for spr in self.sprites:
-            rect = spr.rect
-            x = rect.x()
-            y = rect.y()
-            w = rect.width()
-            h = rect.height()
+            x = spr.x()
+            y = spr.y()
+            w = spr.width()
+            h = spr.height()
 
             if spr == self.selectedSprite:
                 painter.setPen(QPen(Qt.red, 3))
             else:
                 painter.setPen(QPen(Qt.black))
 
-            painter.drawRect(rect)
+            painter.drawRect(spr)
 
             if self.actionDrawSpriteDiagonals.isChecked():
                 painter.drawLine(x, y, x + w, y + h)
@@ -319,30 +319,27 @@ class MainWindow(QMainWindow):
 
             if self.actionDrawSpriteNames.isChecked():
                 text_fm = QFontMetrics(painter.font())
-                text_width = text_fm.width(spr.name)
-                painter.drawText(x + w/2 - text_width/2, y + h/2, spr.name)
+                text_width = text_fm.width(spr.name())
+                painter.drawText(x + w/2 - text_width/2, y + h/2, spr.name())
 
     def _cb_spriteStarted(self):
         self.selectedSprite = None
 
     def _cb_spriteFinished(self, r):
-        name = None
-
         if self.redrawingSprite:
-            name = self.redrawingSprite.name
+            name = self.redrawingSprite.name()
             CommandModifySprite(self, self.redrawingSprite, r.x(), r.y(), r.width(), r.height())
-            self.statusBar().showMessage(f"Finished redrawing sprite {self.redrawingSprite.name}")
+            self.statusBar().showMessage(f"Finished redrawing sprite {self.redrawingSprite.name()}")
             self.redrawingSprite = None
         else:
             name, ok = QInputDialog().getText(self, "Create sprite", "Sprite name:",
                                               QLineEdit.Normal, "unnamed")
-            if not ok:
+            if not ok or not len(name):
                 self.statusBar().showMessage("Failed to get name for sprite")
                 return
 
-            if name:
-                spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-                CommandCreateSprite(self, spr)
+            spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
+            CommandCreateSprite(self, spr)
 
     def _cb_actionReplaceImage(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath())
