@@ -1,0 +1,2 @@
+tinycss==0.4
+PySide2==5.15.2
