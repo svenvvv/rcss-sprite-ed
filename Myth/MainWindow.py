@@ -81,8 +81,8 @@ class MainWindow(QMainWindow):
         self.actionZoomReset.triggered.connect(self._cb_actionZoomReset)
 
         self.actionDrawSpritesDuringSketching.triggered.connect(self._cb_actionDrawSpritesDuringSketching)
-        self.actionFlipImageX.triggered.connect(self._cb_actionFlipAxis)
-        self.actionFlipImageY.triggered.connect(self._cb_actionFlipAxis)
+        self.actionFlipImageX.triggered.connect(self._cb_actionReload)
+        self.actionFlipImageY.triggered.connect(self._cb_actionReload)
 
         self.actionAbout.triggered.connect(self._cb_actionAbout)
 
@@ -361,10 +361,6 @@ class MainWindow(QMainWindow):
 
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
             CommandCreateSprite(self, spr)
-
-    def _cb_actionFlipAxis(self, state):
-        if state:
-            self._cb_actionReload()
 
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
