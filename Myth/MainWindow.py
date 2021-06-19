@@ -227,6 +227,7 @@ class MainWindow(QMainWindow):
         def cb_select(act):
             self.selectedSprite = self.findSpriteByName(act.text())
             self.ctxEditMenu.popup(pos)
+            self.repaint()
 
         def cb_hover(act):
             self.selectedSprite = self.findSpriteByName(act.text())
