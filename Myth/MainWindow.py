@@ -5,10 +5,12 @@ from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
 
+from Myth.SpriteEditModal import SpriteEditModal
+from Myth.AboutWindow import AboutWindow
+
 from Myth.ImageSelect import ImageSelect
 from Myth.Sprite import Sprite
 from Myth.RCSSParser import RCSSParser
-from Myth.SpriteEditModal import SpriteEditModal
 from Myth.UiLoader import UiLoader
 from Myth.Commands import *
 
@@ -385,26 +387,7 @@ class MainWindow(QMainWindow):
         self.imageSelect.setScale(1.0)
 
     def _cb_actionAbout(self):
-        QMessageBox.about(self, "About",
-                "<b>RCSS Sprite Editor</b>"
-                "<p>"
-                "<p>By svenvvv, <a href=\"https://github.com/svenvvv\">Github</a></p>"
-                "WIP sprite editor for RmlUi spritesheets"
-                "</p>"
-                "<br><br><b>License</b>"
-                "<p>"
-                "This program is free software: you can redistribute it and/or modify "
-                "it under the terms of the GNU General Public License as published by "
-                "the Free Software Foundation, version 3."
-                "<br><br>"
-                "This program is distributed in the hope that it will be useful, but "
-                "WITHOUT ANY WARRANTY; without even the implied warranty of "
-                "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU "
-                "General Public License for more details."
-                "<br><br>"
-                "You should have received a copy of the GNU General Public License "
-                "along with this program. If not, see <http://www.gnu.org/licenses/>."
-                "</p>")
+        AboutWindow().exec()
 
     def _cb_actionDrawSpritesDuringSketching(self):
         if self.actionDrawSpritesDuringSketching.isChecked():
