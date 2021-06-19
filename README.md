@@ -17,6 +17,10 @@ Features:
 If you encounter any bugs then please create an 
 [issue](https://github.com/svenvvv/rcss-sprite-ed/issues).
 
+## Documentation
+
+See [the manual](./MANUAL.md)
+
 ## Setting up
 
 Install the requirements.
@@ -44,6 +48,16 @@ sprites in the editor.
 
 Presently, when you click save, then the program will present you with text
 which you can manually paste into your stylesheet.
+
+* No support for creating new spritesheets.
+
+It's required to provide an existing one from an RCSS file.
+
+* No support for stylesheets containing multiple spritesheets.
+
+The loader code does support multiple, but at the moment it's hardcoded to exit
+without prejudice :).
+If you wish to extend it then see `loadStylesheet()` in `MainWindow.py`.
 
 * Bugs, probably.
 
