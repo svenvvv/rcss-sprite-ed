@@ -81,6 +81,9 @@
     <property name="title">
      <string>&amp;Edit</string>
     </property>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRedo"/>
+    <addaction name="separator"/>
     <addaction name="actionReplaceImage"/>
     <addaction name="actionSetResolution"/>
    </widget>
@@ -136,6 +139,9 @@
    <property name="text">
     <string>&amp;Open</string>
    </property>
+   <property name="statusTip">
+    <string>Open a RCSS file.</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
    </property>
@@ -147,6 +153,9 @@
    </property>
    <property name="text">
     <string>&amp;Save</string>
+   </property>
+   <property name="statusTip">
+    <string>Save currently open document.</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
@@ -160,6 +169,9 @@
    <property name="text">
     <string>&amp;Quit</string>
    </property>
+   <property name="statusTip">
+    <string>Quit.</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
    </property>
@@ -172,6 +184,12 @@
    <property name="text">
     <string>Set &amp;image</string>
    </property>
+   <property name="toolTip">
+    <string>Set image</string>
+   </property>
+   <property name="statusTip">
+    <string>Replaces the currently loaded spritesheet image without modifying the already drawn sprites.</string>
+   </property>
   </action>
   <action name="actionSetResolution">
    <property name="icon">
@@ -181,6 +199,9 @@
    <property name="text">
     <string>Set &amp;resolution</string>
    </property>
+   <property name="statusTip">
+    <string>Set the resolution for the current spritesheet. </string>
+   </property>
   </action>
   <action name="actionZoomIn">
    <property name="icon">
@@ -189,6 +210,9 @@
    </property>
    <property name="text">
     <string>Zoom &amp;in</string>
+   </property>
+   <property name="statusTip">
+    <string>Zoom in.</string>
    </property>
    <property name="shortcut">
     <string>Ctrl++</string>
@@ -201,6 +225,9 @@
    </property>
    <property name="text">
     <string>Zoom &amp;out</string>
+   </property>
+   <property name="statusTip">
+    <string>Zoom out.</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+-</string>
@@ -216,6 +243,9 @@
    <property name="text">
     <string>Draw sprite out&amp;lines</string>
    </property>
+   <property name="statusTip">
+    <string>Draw sprite outlines.</string>
+   </property>
   </action>
   <action name="actionDrawSpriteNames">
    <property name="checkable">
@@ -224,6 +254,9 @@
    <property name="text">
     <string>Draw sprite &amp;names</string>
    </property>
+   <property name="statusTip">
+    <string>Draw sprite names.</string>
+   </property>
   </action>
   <action name="actionDrawSpriteDiagonals">
    <property name="checkable">
@@ -231,6 +264,9 @@
    </property>
    <property name="text">
     <string>Draw sprite &amp;diagonals</string>
+   </property>
+   <property name="statusTip">
+    <string>Draw lines on sprite diagonals.</string>
    </property>
   </action>
   <action name="actionDrawSpritesDuringSketching">
@@ -243,6 +279,9 @@
    <property name="text">
     <string>Draw sprites during &amp;sketching</string>
    </property>
+   <property name="statusTip">
+    <string>Draw sprites during the drawing of new sprites. If this is unset then all already-drawn sprites will be hidden for the duration of the sketching.</string>
+   </property>
   </action>
   <action name="actionAbout">
    <property name="icon">
@@ -251,6 +290,9 @@
    </property>
    <property name="text">
     <string>&amp;About</string>
+   </property>
+   <property name="statusTip">
+    <string>About.</string>
    </property>
   </action>
   <action name="actionSaveAs">
@@ -264,6 +306,9 @@
    <property name="text">
     <string>Save &amp;as...</string>
    </property>
+   <property name="statusTip">
+    <string>Save currently open document into another file.</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+S</string>
    </property>
@@ -276,8 +321,41 @@
    <property name="text">
     <string>Reset zoom</string>
    </property>
+   <property name="statusTip">
+    <string>Reset zoom to 100%.</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+0</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="icon">
+    <iconset theme="edit-undo">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="statusTip">
+    <string>Undo last operation.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="icon">
+    <iconset theme="edit-redo">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="statusTip">
+    <string>Redo last operation.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
    </property>
   </action>
  </widget>

@@ -10,6 +10,7 @@ from Myth.Sprite import Sprite
 from Myth.RCSSParser import RCSSParser
 from Myth.SpriteEditModal import SpriteEditModal
 from Myth.UiLoader import UiLoader
+from Myth.Commands import *
 
 
 class QListWidgetSprite(QListWidgetItem):
@@ -33,10 +34,20 @@ class MainWindow(QMainWindow):
         self._setupImageSelect()
         self._setupActions()
         self._setupMenus()
+        self._setupUndo()
 
         # self.loadStylesheet("../../data/gui/invader.rcss")
 
         self.show()
+
+    def _setupUndo(self):
+        self.undo = QUndoStack(self)
+
+        self.actionUndo.setEnabled(False)
+        self.actionRedo.setEnabled(False)
+
+        self.undo.canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
+        self.undo.canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
 
     def _setupImageSelect(self):
         self.imageSelect = ImageSelect()
@@ -49,10 +60,16 @@ class MainWindow(QMainWindow):
         self.imageSelect.contextMenu.connect(self.tryOpenCtxMenu)
 
     def _setupActions(self):
+        self.actionSave.setEnabled(False)
+        self.actionSaveAs.setEnabled(False)
+
         self.actionOpen.triggered.connect(self._cb_actionOpen)
         self.actionSave.triggered.connect(self._cb_actionSave)
         self.actionSaveAs.triggered.connect(self._cb_actionSave)
         self.actionQuit.triggered.connect(self.close)
+
+        self.actionUndo.triggered.connect(lambda: self.undo.undo())
+        self.actionRedo.triggered.connect(lambda: self.undo.redo())
 
         self.actionReplaceImage.triggered.connect(self._cb_actionReplaceImage)
         self.actionSetResolution.triggered.connect(self._cb_actionSetResolution)
@@ -75,12 +92,10 @@ class MainWindow(QMainWindow):
         def cb_redraw():
             s = self.selectedSprite
             self.redrawingSprite = s
-            self.deleteSprite(s)
             self.statusBar().showMessage(f"Redrawing sprite {s.name}...")
 
         def cb_delete():
-            s = self.selectedSprite
-            self.deleteSprite(s)
+            CommandDeleteSprite(self, self.selectedSprite)
 
         editAction = QAction("Edit", self, triggered=cb_edit)
         editAction.setIcon(QIcon.fromTheme("document-properties"))
@@ -96,7 +111,6 @@ class MainWindow(QMainWindow):
 
         def cb_cancel():
             self.statusBar().showMessage(f"Canceled redrawing sprite {self.redrawingSprite.name}")
-            self.addSprite(self.redrawingSprite)
             self.redrawingSprite = None
 
         self.ctxRedrawMenu = QMenu(self)
@@ -126,7 +140,6 @@ class MainWindow(QMainWindow):
             self.spritesList.setCurrentItem(None)
             self.statusBar().showMessage(f"Deleted sprite {s.name}")
 
-
     def loadStylesheet(self, filename):
         parser = RCSSParser()
         css = parser.parse_stylesheet_file(filename)
@@ -152,7 +165,7 @@ class MainWindow(QMainWindow):
                 self.sprites.append(d)
 
         basepath = os.path.dirname(filename)
-        self.openImage(basepath + "/" + self.css.props["src"])
+        self.loadImage(basepath + "/" + self.css.props["src"])
         self.updateTitle()
         self.statusBar().showMessage(f"Successfully loaded stylesheet {filename} with {len(self.css.declarations)} sprites")
 
@@ -242,9 +255,11 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.error(self, self.windowTitle, "Sprite is missing list ref!")
 
-    def openImage(self, filename):
+    def loadImage(self, filename):
         image = QImage(filename)
         if image.isNull():
+            # TODO: rewrite to use QImageReader. Seems like QImage errors go to stderr by default
+            # and thus we can't show them in the message box (?)
             QMessageBox.information(self, self.windowTitle, f"Cannot load {filename}.")
             return False
 
@@ -252,6 +267,10 @@ class MainWindow(QMainWindow):
         self.imageSelect.setPixmap(pixmap)
         self.scale = 1.0
         self.imageSelect.adjustSize()
+
+        self.actionSave.setEnabled(True)
+        self.actionSaveAs.setEnabled(True)
+
         self.statusBar().showMessage(f"Successfully loaded image {filename} ({pixmap.width()}x{pixmap.height()})")
         return True
 
@@ -304,6 +323,8 @@ class MainWindow(QMainWindow):
 
         if self.redrawingSprite:
             name = self.redrawingSprite.name
+            CommandModifySprite(self, self.redrawingSprite, r.x(), r.y(), r.width(), r.height())
+            self.statusBar().showMessage(f"Finished redrawing sprite {self.redrawingSprite.name}")
             self.redrawingSprite = None
         else:
             name, ok = QInputDialog().getText(self, "Create sprite", "Sprite name:",
@@ -312,20 +333,20 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage("Failed to get name for sprite")
                 return
 
-        if name:
-            spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-            self.addSprite(spr)
+            if name:
+                spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
+                CommandCreateSprite(self, spr)
 
     def _cb_actionReplaceImage(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath())
-        if filename and self.openImage(filename):
-            self.css.props["src"] = os.path.basename(filename)
+        if filename:
+            CommandSetImage(self, filename)
 
     def _cb_actionSetResolution(self):
         res, ok = QInputDialog().getInt(self, "Set resolution", "New resolution:",
                                     int(self.css.props["resolution"]), minValue=1)
         if res and ok:
-            self.css.props["resolution"] = res
+            CommandSetProp(self, self.css.props, "resolution", res)
 
     def _cb_spritesListOpenCtxMenu(self, pos):
         it = self.spritesList.selectedItems()[0]

@@ -6,6 +6,10 @@ class Sprite:
     flippedH = False
 
     def __init__(self, name, x, y, w, h):
+        self.name = name
+        self.setSize(x, y, w, h)
+
+    def setSize(self, x, y, w, h):
         # If the sprite would have negative w/h then
         # shift it into the positive for AABB testing
         if w < 0:
@@ -16,8 +20,6 @@ class Sprite:
             y += h
             h = abs(h)
             self.flippedH = True
-
-        self.name = name
         self.rect = QRect(x, y, w, h)
 
     def aabbTest(self, p):
