@@ -3,6 +3,7 @@ from functools import reduce
 
 from Myth.Sprite import Sprite
 
+
 class SpritesheetRule(object):
     at_keyword = '@spritesheet'
 
@@ -18,7 +19,13 @@ class SpritesheetRule(object):
         return ('<{0.__class__.__name__} {0.line}:{0.column}'
                 ' {0.name}>'.format(self))
 
+
 class RCSSParser(tinycss.CSS21Parser):
+    def __init__(self):
+        # A bit of a HACK :)
+        self.hadSpritesheetError = False
+        super().__init__()
+
     def parse_spritesheet_name(self, head):
         if len(head) == 1 and head[0].type == "IDENT":
             return head[0].value
@@ -26,8 +33,8 @@ class RCSSParser(tinycss.CSS21Parser):
         return "UNNAMED"
 
     def parse_spritesheet_declarations(self, input_decls):
-        spritesheet_reserved_props = [ "src", "resolution" ]
-        spritesheet_reserved_props_convert = [ None, int ]
+        spritesheetReservedProps = [ "src", "resolution" ]
+        spritesheetReservedPropsTypes = [ None, int ]
         props = dict()
         decls = []
         errors = []
@@ -37,13 +44,13 @@ class RCSSParser(tinycss.CSS21Parser):
             # which throws on failure and then gets parsed as a regular property ;)
             try:
                 # NOTE list.index() throws ValueError if value not found
-                ridx = spritesheet_reserved_props.index(d.name)
+                ridx = spritesheetReservedProps.index(d.name)
                 # Since all the reserved props are a single value then concat every token
                 # that belongs to these props.
                 s = "".join(list(map(lambda v: str(v.value), d.value)))
 
-                if spritesheet_reserved_props_convert[ridx]:
-                    props[d.name] = spritesheet_reserved_props_convert[ridx](s)
+                if spritesheetReservedPropsTypes[ridx]:
+                    props[d.name] = spritesheetReservedPropsTypes[ridx](s)
                 else:
                     props[d.name] = s
             except ValueError:
@@ -56,6 +63,7 @@ class RCSSParser(tinycss.CSS21Parser):
                 prop_count = len(sprite_props)
                 if prop_count != 4:
                     errors.append(f"Sprite {d.name} has {prop_count} props, expected 4")
+                    self.hadSpritesheetError = True
                     continue
 
                 decls.append(Sprite(d.name,

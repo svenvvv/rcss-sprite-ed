@@ -161,7 +161,7 @@ class MainWindow(QMainWindow):
         parser = RCSSParser()
         css = parser.parse_stylesheet_file(filename)
 
-        if len(css.errors):
+        if parser.hadSpritesheetError:
             print("CSS errors:", css.errors)
             QMessageBox.critical(self, self.windowTitle, f"Error loading file {filename}")
             return
@@ -188,7 +188,6 @@ class MainWindow(QMainWindow):
         self.loadImage(self.basepath + "/" + self.css.props["src"])
         self.updateTitle()
         self.statusBar().showMessage(f"Successfully loaded stylesheet {filename} with {len(self.css.declarations)} sprites")
-
 
     def saveStylesheet(self):
         ss = self.css
