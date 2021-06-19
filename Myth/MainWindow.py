@@ -38,8 +38,6 @@ class MainWindow(QMainWindow):
         self._setupMenus()
         self._setupUndo()
 
-        self.loadStylesheet("../../data/gui/invader.rcss")
-
         self.show()
 
     def _setupUndo(self):
