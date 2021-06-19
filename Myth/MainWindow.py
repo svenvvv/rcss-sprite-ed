@@ -77,7 +77,10 @@ class MainWindow(QMainWindow):
         self.actionZoomIn.triggered.connect(self._cb_actionZoomIn)
         self.actionZoomOut.triggered.connect(self._cb_ZoomOut)
         self.actionZoomReset.triggered.connect(self._cb_actionZoomReset)
+
         self.actionDrawSpritesDuringSketching.triggered.connect(self._cb_actionDrawSpritesDuringSketching)
+        self.actionFlipY.triggered.connect(self.imageSelect.flipY)
+
         self.actionAbout.triggered.connect(self._cb_actionAbout)
 
     def _setupMenus(self):
