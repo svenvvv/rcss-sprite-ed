@@ -162,14 +162,15 @@ class MainWindow(QMainWindow):
         css = parser.parse_stylesheet_file(filename)
 
         if len(css.errors):
-            print("Errors parsing stylesheets:")
-            print(css.errors)
+            print("CSS errors:", css.errors)
+            QMessageBox.critical(self, self.windowTitle, f"Error loading file {filename}")
+            return
 
         spritesheets = list(filter(lambda r: r.at_keyword == "@spritesheet", css.rules))
 
         if len(spritesheets) > 1:
-            QMessageBox.error(self, self.windowTitle,
-                              f"File contained {len(spritesheets)} spritesheets, currently only one is supported")
+            QMessageBox.critical(self, self.windowTitle,
+                                 f"File contained {len(spritesheets)} spritesheets, currently only one is supported")
             return
 
         self.deleteAllSprites()
@@ -276,14 +277,14 @@ class MainWindow(QMainWindow):
             l.setCurrentItem(it)
             self.openCtxEditMenu(selHit, pos)
         else:
-            QMessageBox.information(self, self.windowTitle, "Sprite is missing list ref!")
+            QMessageBox.critical(self, self.windowTitle, "Sprite is missing list ref!")
 
     def loadImage(self, filename):
         image = QImage(filename)
         if image.isNull():
             # TODO: rewrite to use QImageReader. Seems like QImage errors go to stderr by default
             # and thus we can't show them in the message box (?)
-            QMessageBox.information(self, self.windowTitle, f"Cannot load {filename}.")
+            QMessageBox.warning(self, self.windowTitle, f"Cannot load {filename}.")
             return False
 
         pixmap = QPixmap.fromImage(image)
