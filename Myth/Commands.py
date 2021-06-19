@@ -39,7 +39,7 @@ class CommandSetImage(QUndoCommand):
 
         self.win = mainwin
         self.new = new
-        self.prev = self.win.css.props["src"]
+        self.prev = f"{self.win.basepath}/{self.win.css.props['src']}"
 
         if os.path.basename(self.new) != self.prev:
             self.win.undo.push(self)
