@@ -30,7 +30,6 @@ class Sprite(QRect):
             y += h
             h = abs(h)
             self.flippedH = True
-        # self.rect = QRect(x, y, w, h)
         self.setX(x)
         self.setY(y)
         self.setWidth(w)
@@ -57,10 +56,10 @@ class Sprite(QRect):
         # NOTE: if we shifted the image during image loading then shift it back, as
         # otherwise mirrored images will be wrong in RmlUI.
         if self.flippedW:
-            x -= w
             w = -w
+            x -= w
         if self.flippedH:
-            y += h
             h = -h
+            y -= h
 
         return f"{self.name()}: {x}px {y}px {w}px {h}px;"
