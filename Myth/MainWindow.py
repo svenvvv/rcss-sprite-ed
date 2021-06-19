@@ -213,12 +213,17 @@ class MainWindow(QMainWindow):
         self.ctxRedrawMenu.popup(pos)
 
     def openCtxSpriteSelectMenu(self, pos, sprites):
-        def selectSpriteFromCtx(act):
+        def cb_select(act):
             self.selectedSprite = self.findSpriteByName(act.text())
             self.ctxEditMenu.popup(pos)
 
+        def cb_hover(act):
+            self.selectedSprite = self.findSpriteByName(act.text())
+            self.repaint()
+
         menu = QMenu(self)
-        menu.triggered.connect(selectSpriteFromCtx)
+        menu.triggered.connect(cb_select)
+        menu.hovered.connect(cb_hover)
 
         for spr in sprites:
             act = QAction(spr.name, self)
@@ -243,10 +248,8 @@ class MainWindow(QMainWindow):
             return
 
         if len(hit) > 1:
-            print("Multiple hits: ", hit)
             self.selectedSprite = None
             self.repaint()
-
             self.openCtxSpriteSelectMenu(pos, hit)
             return
 
