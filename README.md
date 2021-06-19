@@ -4,6 +4,14 @@ A little editor for spritesheets contained in
 [RmlUi](https://github.com/mikke89/RmlUi) stylesheets.
 Requires Python and Qt5.
 
+Features:
+
+* Create new sprites (mouse drawing),
+* Delete sprites,
+* Modify existing sprites (redraw using mouse or enter values),
+* Replace source image (spritesheet `src` attribute),
+* Undo/redo.
+
 ![Screenshot](./img/rcss-ed-1.png)
 
 If you encounter any bugs then please create an 
