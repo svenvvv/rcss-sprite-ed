@@ -197,7 +197,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Set &amp;resolution</string>
+    <string>Set re&amp;solution</string>
    </property>
    <property name="statusTip">
     <string>Set the resolution for the current spritesheet. </string>
@@ -319,7 +319,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Reset zoom</string>
+    <string>&amp;Reset zoom</string>
    </property>
    <property name="statusTip">
     <string>Reset zoom to 100%.</string>
@@ -334,7 +334,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Undo</string>
+    <string>&amp;Undo</string>
    </property>
    <property name="statusTip">
     <string>Undo last operation.</string>
@@ -349,7 +349,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Redo</string>
+    <string>&amp;Redo</string>
    </property>
    <property name="statusTip">
     <string>Redo last operation.</string>
