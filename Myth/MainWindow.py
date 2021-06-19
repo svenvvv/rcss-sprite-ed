@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
     def saveStylesheet(self):
         ss = self.css
 
-        ret = f"@stylesheet {ss.name}\n"
+        ret = f"@spritesheet {ss.name}\n"
         ret += "{\n"
 
         ret += f"\tsrc: {ss.props['src']};\n"
