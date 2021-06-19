@@ -14,6 +14,8 @@ The work area is the central area of the program and contains the most functiona
 2. Left-click on the image to mark the end position of the sprite,
 3. Enter a name for the newly created sprite.
 
+TIP: Right-click anywhere on the image to cancel.
+
 ### Modifying an existing sprite (RIGHT CLICK)
 
 Right-click on any existing sprite to open the context menu.
