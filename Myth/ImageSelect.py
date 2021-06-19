@@ -30,10 +30,19 @@ class ImageSelect(QLabel):
         self.selRectWhiteLinePen = QPen(Qt.white, 1, Qt.CustomDashLine)
         self.selRectWhiteLinePen.setDashPattern(list(reversed(selDashes)))
 
-    def flipY(self):
+    def setPixmap(self, pixmap, flipX=False, flipY=False):
         tr = QTransform()
-        tr.scale(1.0, -1.0)
-        return self.setPixmap(self.pixmap().transformed(tr))
+        if flipX:
+            tr.scale(-1.0, 1.0)
+        if flipY:
+            tr.scale(1.0, -1.0)
+        return super().setPixmap(pixmap.transformed(tr))
+
+    def flipX(self):
+        return self.setPixmap(self.pixmap(), True, False)
+
+    def flipY(self):
+        return self.setPixmap(self.pixmap(), False, True)
 
     def paintEvent(self, evt):
         super().paintEvent(evt)

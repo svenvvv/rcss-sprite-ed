@@ -87,7 +87,6 @@
     <addaction name="separator"/>
     <addaction name="actionReplaceImage"/>
     <addaction name="actionSetResolution"/>
-    <addaction name="actionFlipY"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -101,6 +100,9 @@
     <addaction name="actionDrawSpriteNames"/>
     <addaction name="actionDrawSpriteDiagonals"/>
     <addaction name="actionDrawSpritesDuringSketching"/>
+    <addaction name="separator"/>
+    <addaction name="actionFlipImageX"/>
+    <addaction name="actionFlipImageY"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -366,20 +368,6 @@
     <string>Ctrl+R</string>
    </property>
   </action>
-  <action name="actionFlipY">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset theme="object-flip-vertical"/>
-   </property>
-   <property name="text">
-    <string>Flip image &amp;Y</string>
-   </property>
-   <property name="statusTip">
-    <string>Flip source image on the Y-axis.</string>
-   </property>
-  </action>
   <action name="actionReload">
    <property name="enabled">
     <bool>false</bool>
@@ -395,6 +383,22 @@
    </property>
    <property name="shortcut">
     <string>F5</string>
+   </property>
+  </action>
+  <action name="actionFlipImageX">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Flip image &amp;X</string>
+   </property>
+  </action>
+  <action name="actionFlipImageY">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Flip image &amp;Y</string>
    </property>
   </action>
  </widget>

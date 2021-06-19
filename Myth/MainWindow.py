@@ -81,7 +81,8 @@ class MainWindow(QMainWindow):
         self.actionZoomReset.triggered.connect(self._cb_actionZoomReset)
 
         self.actionDrawSpritesDuringSketching.triggered.connect(self._cb_actionDrawSpritesDuringSketching)
-        self.actionFlipY.triggered.connect(self.imageSelect.flipY)
+        self.actionFlipImageX.triggered.connect(self._cb_actionFlipAxis)
+        self.actionFlipImageY.triggered.connect(self._cb_actionFlipAxis)
 
         self.actionAbout.triggered.connect(self._cb_actionAbout)
 
@@ -286,7 +287,9 @@ class MainWindow(QMainWindow):
             return False
 
         pixmap = QPixmap.fromImage(image)
-        self.imageSelect.setPixmap(pixmap)
+        flipX = self.actionFlipImageX.isChecked()
+        flipY = self.actionFlipImageY.isChecked()
+        self.imageSelect.setPixmap(pixmap, flipX, flipY)
         self.scale = 1.0
         self.imageSelect.adjustSize()
 
@@ -294,7 +297,6 @@ class MainWindow(QMainWindow):
         self.actionSaveAs.setEnabled(True)
         self.actionReplaceImage.setEnabled(True)
         self.actionSetResolution.setEnabled(True)
-        self.actionFlipY.setEnabled(True)
         self.actionReload.setEnabled(True)
 
         self.statusBar().showMessage(f"Successfully loaded image {filename} ({pixmap.width()}x{pixmap.height()})")
@@ -358,6 +360,10 @@ class MainWindow(QMainWindow):
 
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
             CommandCreateSprite(self, spr)
+
+    def _cb_actionFlipAxis(self, state):
+        if state:
+            self._cb_actionReload()
 
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
