@@ -87,7 +87,9 @@ class MainWindow(QMainWindow):
         self.ctxEditMenu = QMenu(self)
 
         def cb_edit():
-            ed = SpriteEditModal(self.selectedSprite, self)
+            d = SpriteEditModal(self.selectedSprite, self)
+            if d.exec() == QDialog.Accepted:
+                CommandModifySprite(self, self.selectedSprite, **d.newValues)
 
         def cb_redraw():
             s = self.selectedSprite

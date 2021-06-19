@@ -93,13 +93,13 @@ class CommandDeleteSprite(QUndoCommand):
 
 
 class CommandModifySprite(QUndoCommand):
-    def __init__(self, mainwin, sprite, x, y, w, h, newname=None):
+    def __init__(self, mainwin, sprite, x, y, w, h, name=None):
         super().__init__()
 
         self.win = mainwin
         self.sprite = sprite
 
-        self.newName = newname
+        self.newName = name
         self.prevName = sprite.name
 
         self.newSize = {

@@ -40,9 +40,14 @@ class SpriteEditModal(QDialog):
         if prop == "name":
             self.sprite.name = val
         elif prop == "x":
+            # NOTE: for both x and y edits reset the width/height as well, because otherwise
+            # the rect gets smaller during x/y movement (even though the width/height are never
+            # changed). I'm unsure if this is the correct way to cause a rect update, but it works.
             self.sprite.rect.setX(val)
+            self.sprite.rect.setWidth(self.widthSpinBox.value())
         elif prop == "y":
             self.sprite.rect.setY(val)
+            self.sprite.rect.setHeight(self.heightSpinBox.value())
         elif prop == "w":
             self.sprite.rect.setWidth(val)
         elif prop == "h":
@@ -53,10 +58,7 @@ class SpriteEditModal(QDialog):
         if self.parent:
             self.parent.repaint()
 
-    def accept(self):
-        self.done(1)
-
-    def reject(self):
+    def resetSprite(self):
         if self.sprite:
             self.sprite.name = self.startName
             self.sprite.rect.setX(self.startX)
@@ -67,4 +69,19 @@ class SpriteEditModal(QDialog):
         if self.parent:
             self.parent.repaint()
 
+    def accept(self):
+        self.resetSprite()
+
+        self.newValues = {
+            "name": self.nameEdit.text(),
+            "x": self.xSpinBox.value(),
+            "y": self.ySpinBox.value(),
+            "w": self.widthSpinBox.value(),
+            "h": self.heightSpinBox.value()
+        }
+
+        self.done(1)
+
+    def reject(self):
+        self.resetSprite()
         self.done(0)
