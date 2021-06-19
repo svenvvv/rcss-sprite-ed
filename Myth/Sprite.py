@@ -16,6 +16,8 @@ class Sprite(QRect):
 
     def setName(self, name):
         self._name = name
+        if self.QListItemRef:
+            self.QListItemRef.setText(self._name)
 
     def setSize(self, x, y, w, h):
         # If the sprite would have negative w/h then
