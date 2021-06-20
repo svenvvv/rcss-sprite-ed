@@ -64,13 +64,12 @@ class CommandCreateSprite(QUndoCommand):
         self.win.undo.push(self)
 
     def redo(self):
-        self.win.addSprite(self.sprite)
+        self.win.spritesList.model().insertRow(self.sprite)
         self.win.repaint()
         self.win.statusBar().showMessage(f"Added sprite {self.sprite.name()}")
 
     def undo(self):
-        self.win.deleteSprite(self.sprite)
-        self.win.selectedSprite = None
+        self.win.spritesList.model().removeRow(self.sprite)
         self.win.repaint()
         self.win.statusBar().showMessage(f"Deleted sprite {self.sprite.name()}")
 
@@ -85,13 +84,13 @@ class CommandDeleteSprite(QUndoCommand):
         self.win.undo.push(self)
 
     def redo(self):
-        self.win.deleteSprite(self.sprite)
+        self.win.spritesList.model().removeRow(self.sprite)
         self.win.selectedSprite = None
         self.win.repaint()
         self.win.statusBar().showMessage(f"Deleted sprite {self.sprite.name()}")
 
     def undo(self):
-        self.win.addSprite(self.sprite)
+        self.win.spritesList.model().insertRow(self.sprite)
         self.win.repaint()
         self.win.statusBar().showMessage(f"Added sprite {self.sprite.name()}")
 

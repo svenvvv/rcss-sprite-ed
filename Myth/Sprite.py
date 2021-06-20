@@ -1,7 +1,6 @@
 from PySide2.QtCore import QRect
 
 class Sprite(QRect):
-    QListItemRef = None
     flippedW = False
     flippedH = False
 
@@ -16,8 +15,6 @@ class Sprite(QRect):
 
     def setName(self, name):
         self._name = name
-        if self.QListItemRef:
-            self.QListItemRef.setText(self._name)
 
     def setSize(self, x, y, w, h):
         # If the sprite would have negative w/h then

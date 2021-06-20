@@ -89,7 +89,6 @@ class Spritesheet:
         return ret
 
 
-
 class SpriteListModel(QAbstractListModel):
     _selected = None
     _redrawing = None
@@ -112,10 +111,14 @@ class SpriteListModel(QAbstractListModel):
         return self._sprites
 
     def insertRow(self, sprite):
+        l = len(self._sprites)
+        self.beginInsertRows(QModelIndex(), l, l+1)
         self._sprites.append(sprite)
+        self.endInsertRows()
 
     def removeRow(self, sprite):
-        print(sprite)
+        if self._selected == sprite:
+            self._selected = None
         self._sprites.remove(sprite)
 
     def hitTest(self, pos):
@@ -129,6 +132,7 @@ class SpriteListModel(QAbstractListModel):
         return self._selected
 
     def setSelected(self, sprite):
+        print(f"Setselected {sprite.name()}")
         self._selected = sprite
 
     def setSelectedByName(self, spriteName):
@@ -147,6 +151,7 @@ class SpriteListModel(QAbstractListModel):
 
 class SpritesheetListModel(QAbstractListModel):
     _selected = None
+    itemSelectionChanged = Signal(Spritesheet)
 
     def __init__(self, *args, sheets=[], **kwargs):
         super(SpritesheetListModel, self).__init__(*args, **kwargs)
@@ -186,6 +191,7 @@ class SpritesheetListModel(QAbstractListModel):
         for s in self._sheets:
             if s.name() == sheetName:
                 self._selected = s
+                self.itemSelectionChanged.emit(s)
                 return True
         return False
 
@@ -193,13 +199,9 @@ class SpritesheetListModel(QAbstractListModel):
         self._selected = None
 
 class MainWindow(QMainWindow):
-    basepath = None
-    sprites = []
     redrawingSprite = None
     windowTitle = "RCSS Spritesheet Editor"
     scale = 1.0
-    spritesheets = {}
-    currentSpritesheet = None
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -261,10 +263,10 @@ class MainWindow(QMainWindow):
 
     def _setupMenus(self):
         # self.spritesList.itemSelectionChanged.connect(self._cb_spritesListSelectItem)
-        self.spritesList.customContextMenuRequested.connect(self._cb_spritesListOpenCtxMenu)
+        self.spritesList.customContextMenuRequested.connect(lambda: self.ctxEditMenu.popup(QCursor.pos()))
 
         self.spritesList.clicked.connect(self._cb_spritesListSelectItem)
-        self.spritesheetsList.clicked.connect(self._cb_spritesheetsListSelectItem)
+        # self.spritesheetsList.clicked.connect(self._cb_spritesheetsListSelectItem)
 
         self.ctxEditMenu = QMenu(self)
 
@@ -310,25 +312,11 @@ class MainWindow(QMainWindow):
         else:
             self.setWindowTitle(self.windowTitle)
 
-    def addSprite(self, spr):
-        self.spritesList.model().insertRow(spr)
-
-    def deleteSprite(self, s):
-        # self.sprites.remove(s)
-        mod = self.spritesList.model()
-        mod.removeRow(s)
-        mod.clearSelection()
-        # self.spritesList.setCurrentItem(None)
-
     def deleteAllSprites(self):
         self.redrawingSprite = None
-        # self.selectedSprite = None
-        # self.sprites.clear()
 
     def selectSpritesheet(self, name):
-        # self.selectedSprite = None
         self.redrawingSprite = None
-        # self.currentSpritesheet = self.spritesheets[name]
 
         ssmod = self.spritesheetsList.model()
         ssmod.setSelectedByName(name)
@@ -372,6 +360,9 @@ class MainWindow(QMainWindow):
 
         self.selectSpritesheet(parsedSheets[0].name())
         self.updateTitle(os.path.basename(filename))
+
+        self.spritesheetsList.model().itemSelectionChanged.connect(self._cb_spritesListSelectItem)
+
         self.statusBar().showMessage(f"Successfully loaded {len(parsedSheets)} spritesheets")
 
     def saveStylesheet(self):
@@ -382,11 +373,6 @@ class MainWindow(QMainWindow):
 
     def repaint(self):
         self.imageSelect.update()
-
-    def findSpriteByQItem(self, item):
-        for s in self.sprites:
-            if s.QListItemRef == item:
-                return s
 
     def openCtxSpriteSelectMenu(self, pos, sprites):
         def cb_select(act):
@@ -512,8 +498,7 @@ class MainWindow(QMainWindow):
                 return
 
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-            self.addSprite(spr)
-            # CommandCreateSprite(self, spr)
+            CommandCreateSprite(self, spr)
 
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
@@ -531,11 +516,6 @@ class MainWindow(QMainWindow):
                                     int(sheet.resolution()), minValue=1)
         if res and ok:
             CommandSetResolution(self, res)
-
-    def _cb_spritesListOpenCtxMenu(self, pos):
-        it = self.spritesList.selectedItems()[0]
-        target = self.findSpriteByQItem(it)
-        self.ctxEditMenu.popup(QCursor.pos())
 
     def _cb_spritesListSelectItem(self):
         sel = self.spritesList.selectedItems()
