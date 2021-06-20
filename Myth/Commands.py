@@ -4,6 +4,15 @@ from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 
+class CommandError(ValueError):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class CommandIgnored(ValueError):
+    def __init__(self, message):
+        super().__init__(message)
+
 
 class CommandSetResolution(QUndoCommand):
     def __init__(self, mainwin, new):
@@ -13,10 +22,8 @@ class CommandSetResolution(QUndoCommand):
         self.new = new
         self.prev = self.win.spritesList.model().sheet().resolution()
 
-        if self.new != self.prev:
-            self.win.undo.push(self)
-        else:
-            self.win.statusBar().showMessage("Old and new resolution are the same, ignoring")
+        if self.new == self.prev:
+            raise CommandIgnored("Old and new resolution are the same, ignoring")
 
     def redo(self):
         self.win.spritesList.model().sheet().setResolution(self.new)
@@ -35,10 +42,8 @@ class CommandSetImage(QUndoCommand):
         self.new = new
         self.prev = self.win.spritesList.model().sheet().sourceLongPath()
 
-        if os.path.basename(self.new) != self.prev:
-            self.win.undo.push(self)
-        else:
-            self.win.statusBar().showMessage("Selected image has already been loaded, ignoring")
+        if os.path.basename(self.new) == self.prev:
+            raise CommandIgnored("Selected image has already been loaded, ignoring")
 
     def do(self, new):
         if self.win.loadImage(new):
@@ -62,10 +67,7 @@ class CommandCreateSprite(QUndoCommand):
         self.sprite = sprite
 
         if self.win.spritesList.model().findDupes(sprite.name()):
-            QMessageBox.warning(self.win, self.win.windowTitle, f"Duplicate sprite name: {self.sprite.name()}")
-            return
-
-        self.win.undo.push(self)
+            raise CommandError(f"Duplicate sprite name: {self.sprite.name()}")
 
     def redo(self):
         if self.win.spritesList.model().insertRow(self.sprite):
@@ -86,8 +88,6 @@ class CommandDeleteSprite(QUndoCommand):
 
         self.win = mainwin
         self.sprite = sprite
-
-        self.win.undo.push(self)
 
     def redo(self):
         self.win.spritesList.model().removeRow(self.sprite)
@@ -125,8 +125,6 @@ class CommandModifySprite(QUndoCommand):
             "w": sprite.width(),
             "h": sprite.height()
         }
-
-        self.win.undo.push(self)
 
     def redo(self):
         self.sprite.setSize(**self.newSize)

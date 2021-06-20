@@ -104,6 +104,9 @@ class SpriteListModel(QAbstractListModel):
             ss = self._sprites[index.row()]
             return ss.name()
 
+    def undoStack(self):
+        return self._undoStack
+
     def rowCount(self, index):
         return len(self._sprites)
 
@@ -227,11 +230,6 @@ class MainWindow(QMainWindow):
         self.show()
 
     def _setupUndo(self):
-        self.undo = QUndoStack(self)
-
-        self.undo.canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
-        self.undo.canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
-
         self.actionUndo.setEnabled(False)
         self.actionRedo.setEnabled(False)
 
@@ -255,8 +253,8 @@ class MainWindow(QMainWindow):
         self.actionReload.triggered.connect(self._cb_actionReload)
         self.actionQuit.triggered.connect(self.close)
 
-        self.actionUndo.triggered.connect(lambda: self.undo.undo())
-        self.actionRedo.triggered.connect(lambda: self.undo.redo())
+        self.actionUndo.triggered.connect(lambda: self.spritesList.model().undoStack().undo())
+        self.actionRedo.triggered.connect(lambda: self.spritesList.model().undoStack().redo())
 
         self.actionReplaceImage.triggered.connect(self._cb_actionReplaceImage)
         self.actionSetResolution.triggered.connect(self._cb_actionSetResolution)
@@ -280,7 +278,8 @@ class MainWindow(QMainWindow):
             s = self.spritesList.model().selected()
             d = SpriteEditModal(s, self)
             if d.exec() == QDialog.Accepted:
-                CommandModifySprite(self, s, **d.newValues)
+                stack = self.spritesList.model().undoStack()
+                self.createCommand(stack, CommandModifySprite, self, s, **d.newValues)
 
         def cb_redraw():
             s = self.spritesList.model().selected()
@@ -289,7 +288,8 @@ class MainWindow(QMainWindow):
 
         def cb_delete():
             s = self.spritesList.model().selected()
-            CommandDeleteSprite(self, s)
+            stack = self.spritesList.model().undoStack()
+            self.createCommand(stack, CommandDeleteSprite, self, s)
 
         editAction = QAction("Edit", self, triggered=cb_edit)
         editAction.setIcon(QIcon.fromTheme("document-properties"))
@@ -333,6 +333,9 @@ class MainWindow(QMainWindow):
         del prevmod
 
         self.spritesList.selectionModel().currentChanged.connect(self._cb_spritesListSelectItem)
+
+        self.spritesList.model().undoStack().canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
+        self.spritesList.model().undoStack().canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
 
         self.loadImage(ssmod.getSheetImage(name))
         self.statusBar().showMessage(f"Selected spritesheet {name}")
@@ -467,6 +470,18 @@ class MainWindow(QMainWindow):
         self.actionZoomIn.setEnabled(self.scale < 3.0)
         self.actionZoomOut.setEnabled(self.scale > 0.333)
 
+    def createCommand(self, stack, type, *args, **kwargs):
+        try:
+            cmd = type(*args, **kwargs)
+            stack.push(cmd)
+            return True
+        except CommandError as e:
+            QMessageBox.warning(self, self.windowTitle, str(e))
+            return False
+        except CommandIgnored as e:
+            self.statusBar().showMessage(str(e))
+            return False
+
     def adjustScrollBar(self, scrollBar, factor):
         val = factor * scrollBar.value() + ((factor - 1) * scrollBar.pageStep()/2)
         scrollBar.setValue(int(val))
@@ -503,8 +518,11 @@ class MainWindow(QMainWindow):
     def _cb_spriteFinished(self, r):
         if self.redrawingSprite:
             name = self.redrawingSprite.name()
-            CommandModifySprite(self, self.redrawingSprite, r.x(), r.y(), r.width(), r.height())
-            self.statusBar().showMessage(f"Finished redrawing sprite {self.redrawingSprite.name()}")
+            stack = self.spritesList.model().undoStack()
+            if self.createCommand(stack, CommandModifySprite,
+                                  self, self.redrawingSprite,
+                                  r.x(), r.y(), r.width(), r.height()):
+                self.statusBar().showMessage(f"Finished redrawing sprite {self.redrawingSprite.name()}")
             self.redrawingSprite = None
         else:
             name, ok = QInputDialog().getText(self, "Create sprite", "Sprite name:",
@@ -514,7 +532,9 @@ class MainWindow(QMainWindow):
                 return
 
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-            CommandCreateSprite(self, spr)
+            # cmd = CommandCreateSprite(self, spr)
+            stack = self.spritesList.model().undoStack()
+            self.createCommand(stack, CommandCreateSprite, self, spr)
 
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
@@ -524,14 +544,16 @@ class MainWindow(QMainWindow):
     def _cb_actionReplaceImage(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath())
         if filename:
-            CommandSetImage(self, filename)
+            stack = self.spritesList.model().undoStack()
+            self.createCommand(stack, CommandSetImage, self, filename)
 
     def _cb_actionSetResolution(self):
         sheet = self.spritesList.model().sheet()
         res, ok = QInputDialog().getInt(self, "Set resolution", "New resolution:",
                                     int(sheet.resolution()), minValue=1)
         if res and ok:
-            CommandSetResolution(self, res)
+            stack = self.spritesList.model().undoStack()
+            self.createCommand(stack, CommandSetResolution, self, res)
 
     def _cb_spritesListSelectItem(self, it):
         self.spritesList.model().setSelectedByName(it.data())
