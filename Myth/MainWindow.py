@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
     def deleteAllSprites(self):
         self.redrawingSprite = None
 
-    def selectSpritesheet(self, name):
+    def selectSpritesheet(self, name, loadImage=True):
         self.redrawingSprite = None
 
         ssmod = self.spritesheetsList.model()
@@ -148,8 +148,10 @@ class MainWindow(QMainWindow):
         self.actionUndo.setEnabled(self.curUndoStack.canUndo())
         self.actionRedo.setEnabled(self.curUndoStack.canRedo())
 
-        self.loadImage(ssmod.getSheetImage(name))
-        self._cb_actionZoomReset()
+        if loadImage:
+            self.loadImage(ssmod.getSheetImage(name))
+            self._cb_actionZoomReset()
+
         self.statusBar().showMessage(f"Selected spritesheet {name}")
 
     def loadStylesheet(self, filename):
@@ -167,34 +169,37 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, self.windowTitle, f"Stylesheet does not contain any spritesheets!")
             return
 
-        self.deleteAllSprites()
-        self.undoStacks = {}
-
         parsedSheets = []
         basepath = os.path.dirname(filename)
         for ss in spritesheets:
             try:
-                s = Spritesheet(ss)
+                s = Spritesheet.fromRCSS(ss)
                 s.setBasepath(basepath)
                 parsedSheets.append(s)
             except SpritesheetError as e:
                 QMessageBox.critical(self, self.windowTitle, f"Error parsing \"{ss.name}\": {e}")
                 return
 
-        mod = SpritesheetListModel(sheets=parsedSheets)
+        self.updateTitle(os.path.basename(filename))
+        self.loadParsedStylesheets(parsedSheets, True)
+
+    def loadParsedStylesheets(self, sheets, loadImage=True):
+        self.deleteAllSprites()
+        self.undoStacks = {}
+
+        mod = SpritesheetListModel(sheets=sheets)
         prevmod = self.spritesheetsList.model()
         self.spritesheetsList.setModel(mod)
 
         # NOTE: Qt docs recommend to delete the previous model
         del prevmod
 
-        self.selectSpritesheet(parsedSheets[0].name())
-        self.updateTitle(os.path.basename(filename))
+        self.selectSpritesheet(sheets[0].name(), loadImage)
 
         # NOTE: connect signals here because setModel overwrites signals :(
         self.spritesheetsList.selectionModel().currentChanged.connect(lambda cur,prev: self.selectSpritesheet(cur.data()))
+        self.statusBar().showMessage(f"Successfully loaded {len(sheets)} spritesheets")
 
-        self.statusBar().showMessage(f"Successfully loaded {len(parsedSheets)} spritesheets")
 
     def saveStylesheet(self):
         ret = ""
@@ -256,7 +261,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, self.windowTitle, f"Cannot load {filename}: {reader.error()}.")
             return False
         self.setImage(image)
-        self.statusBar().showMessage(f"Successfully loaded image {filename} ({pixmap.width()}x{pixmap.height()})")
+        self.statusBar().showMessage(f"Successfully loaded image {filename}")
         return True
 
     def setImage(self, image):
@@ -378,12 +383,29 @@ class MainWindow(QMainWindow):
                                                   "Saving into RCSS file isn't implemented yet.", ss)
 
     def _cb_actionPackImages(self):
-        path = QFileDialog.getExistingDirectory(self, "Open image directory", QDir.currentPath())
-        if path:
-            packer = SpritePacker(path, True)
-            img, sprites = packer.pack(256, 256)
-            self.spritesList._sprites = sprites
-            self.setImage(img)
+        loadPath = QFileDialog.getExistingDirectory(self, "Open image directory", QDir.currentPath())
+        if not loadPath:
+            self.statusBar().showMessage("No input directory selected")
+            return
+
+        imagePath,_ = QFileDialog.getSaveFileName(self, "Select output image file", QDir.currentPath())
+        if not imagePath:
+            self.statusBar().showMessage("No output file selected")
+            return
+
+        packer = SpritePacker(loadPath, True)
+        img, sprites = packer.pack(256, 256)
+
+        img.save(imagePath, "PNG")
+
+        file = os.path.basename(imagePath)
+        base = os.path.dirname(imagePath)
+
+        print(imagePath, file, base)
+
+        ss = Spritesheet(base, "packed", sprites, file)
+        self.loadParsedStylesheets([ss], False)
+        self.setImage(img)
 
     def _cb_actionZoomIn(self):
         self.scaleImage(1.25)

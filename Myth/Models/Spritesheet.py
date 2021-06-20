@@ -5,19 +5,20 @@ class SpritesheetError(ValueError):
 
 
 class Spritesheet:
-    requiredProps = [ "src" ]
     _sprites = []
-    _props = []
     _basepath = None
 
-    def __init__(self, css):
-        self._name = css.name
-        self._sprites = css.declarations
-        self._props = css.props
+    def __init__(self, basepath, name, sprites, src="none", resolution=None):
+        self._name = name
+        self._sprites = sprites
 
-        for p in self.requiredProps:
-            if not p in self._props:
-                raise SpritesheetError(f"Missing required property: {p}")
+        self._src = src
+        self._resolution = resolution
+
+    @staticmethod
+    def fromRCSS(css):
+        props = css.props
+        return Spritesheet("", css.name, css.declarations, props["src"], props["resolution"])
 
     def setBasepath(self, path):
         self._basepath = path
@@ -26,19 +27,19 @@ class Spritesheet:
         return self._basepath
 
     def resolution(self):
-        return self._props["resolution"]
+        return self._resolution
 
     def setResolution(self, res):
-        self._props["resolution"] = res
+        self._resolution = res
 
     def source(self):
-        return self._props["src"]
+        return self._src
 
     def sourceLongPath(self):
         return f"{self.basepath()}/{self.source()}"
 
     def setSource(self, source):
-        self._props["src"] = source
+        self._src = source
 
     def name(self):
         return self._name
@@ -46,18 +47,15 @@ class Spritesheet:
     def sprites(self):
         return self._sprites
 
-    def props(self):
-        return self._props
-
     def serialize(self):
         ret = f"@spritesheet {self._name}\n"
         ret += "{\n"
 
         ret += f"\t/* Path: {self.sourceLongPath()} */\n"
-        ret += f"\tsrc: {self._props['src']};\n"
+        ret += f"\tsrc: {self._src};\n"
 
-        if self._props["resolution"]:
-            ret += f"\tresolution: {self._props['resolution']}x;\n"
+        if self._resolution:
+            ret += f"\tresolution: {self._resolution}x;\n"
 
         ret += "\n"
 
