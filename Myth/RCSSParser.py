@@ -1,7 +1,7 @@
 import tinycss
 from functools import reduce
 
-from Myth.Sprite import Sprite
+from Myth.Models.Sprite import Sprite
 
 
 class SpritesheetRule(object):

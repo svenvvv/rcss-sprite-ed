@@ -9,205 +9,18 @@ from Myth.SpriteEditModal import SpriteEditModal
 from Myth.AboutWindow import AboutWindow
 
 from Myth.ImageSelect import ImageSelect
-from Myth.Sprite import Sprite
 from Myth.RCSSParser import RCSSParser
 from Myth.UiLoader import UiLoader
 from Myth.Commands import *
 
-
-class QListWidgetSprite(QListWidgetItem):
-    def __init__(self, sprite):
-        super().__init__(sprite.name())
-        self.sprite = sprite
-
-class SpritesheetError(ValueError):
-    def __init__(self, message):
-        super().__init__(message)
-
-class Spritesheet:
-    requiredProps = [ "src" ]
-    _sprites = []
-    _props = []
-    _basepath = None
-
-    def __init__(self, css):
-        self._name = css.name
-        self._sprites = css.declarations
-        self._props = css.props
-
-        for p in self.requiredProps:
-            if not p in self._props:
-                raise SpritesheetError(f"Missing required property: {p}")
-
-    def setBasepath(self, path):
-        self._basepath = path
-
-    def basepath(self):
-        return self._basepath
-
-    def resolution(self):
-        return self._props["resolution"]
-
-    def setResolution(self, res):
-        self._props["resolution"] = res
-
-    def source(self):
-        return self._props["src"]
-
-    def sourceLongPath(self):
-        return f"{self.basepath()}/{self.source()}"
-
-    def setSource(self, source):
-        self._props["src"] = source
-
-    def name(self):
-        return self._name
-
-    def sprites(self):
-        return self._sprites
-
-    def props(self):
-        return self._props
-
-    def serialize(self):
-        ret = f"@spritesheet {self._name}\n"
-        ret += "{\n"
-
-        ret += f"\t/* Path: {self.sourceLongPath()} */\n"
-        ret += f"\tsrc: {self._props['src']};\n"
-
-        if self._props["resolution"]:
-            ret += f"\tresolution: {self._props['resolution']}x;\n"
-
-        ret += "\n"
-
-        for s in self._sprites:
-            ret += f"\t{s.toRCSS()}\n"
-
-        ret += "}\n"
-
-        return ret
-
-
-class SpriteListModel(QAbstractListModel):
-    _selected = None
-    _redrawing = None
-
-    def __init__(self, *args, sprites=[], sheet=None, **kwargs):
-        super(SpriteListModel, self).__init__(*args, **kwargs)
-        self._sheet = sheet
-        self._sprites = sprites
-
-    def data(self, index, role):
-        if role == Qt.DisplayRole:
-            ss = self._sprites[index.row()]
-            return ss.name()
-
-    def rowCount(self, index):
-        return len(self._sprites)
-
-    def sprites(self):
-        return self._sprites
-
-    def findDupes(self, name):
-        dupes = filter(lambda s: s.name() == name, self._sprites)
-        if len(list(dupes)) > 0:
-            return True
-        return False
-
-    def insertRow(self, sprite):
-        if self.findDupes(sprite.name()):
-            return False
-
-        l = len(self._sprites)
-        self.beginInsertRows(QModelIndex(), l, l+1)
-        self._sprites.append(sprite)
-        self.endInsertRows()
-        return True
-
-    def removeRow(self, sprite):
-        idx = self._sprites.index(sprite)
-        self.beginRemoveRows(QModelIndex(), idx, idx)
-        if self._selected == sprite:
-            self._selected = None
-        self._sprites.remove(sprite)
-        self.endRemoveRows()
-
-    def hitTest(self, pos):
-        hit = []
-        for spr in self._sprites:
-            if spr.aabbTest(pos):
-                hit.append(spr)
-        return hit
-
-    def selected(self):
-        return self._selected
-
-    def setSelected(self, sprite):
-        self._selected = sprite
-
-    def setSelectedByName(self, spriteName):
-        for spr in self._sprites:
-            if spr.name() == spriteName:
-                self._selected = spr
-                return True
-        return False
-
-    def clearSelection(self):
-        self._selected = None
-
-    def sheet(self):
-        return self._sheet
-
-
-class SpritesheetListModel(QAbstractListModel):
-    _selected = None
-
-    def __init__(self, *args, sheets=[], **kwargs):
-        super(SpritesheetListModel, self).__init__(*args, **kwargs)
-        self._sheets = sheets
-
-    def data(self, index, role):
-        if role == Qt.DisplayRole:
-            ss = self._sheets[index.row()]
-            return ss.name()
-
-    def rowCount(self, index):
-        return len(self._sheets)
-
-    def getSheetListModel(self, sheetName):
-        for s in self._sheets:
-            if s.name() == sheetName:
-                return SpriteListModel(sprites=s.sprites(), sheet=s)
-
-    def setSheetImage(self, sheet, image):
-        sheet.setSource(image)
-
-    def getSheetImage(self, sheetName=None):
-        if sheetName is None:
-            sheetName = self._selected.name()
-
-        for s in self._sheets:
-            if s.name() == sheetName:
-                return f"{s.basepath()}/{s.source()}"
-
-    def sheets(self):
-        return self._sheets
-
-    def selected(self):
-        return self._selected
-
-    def setSelectedByName(self, sheetName):
-        for s in self._sheets:
-            if s.name() == sheetName:
-                self._selected = s
-                return True
-        return False
-
-    def clearSelection(self):
-        self._selected = None
+from Myth.Models.Sprite import Sprite
+from Myth.Models.SpriteListModel import *
+from Myth.Models.SpritesheetListModel import *
+from Myth.Models.Spritesheet import *
 
 class MainWindow(QMainWindow):
+    # NOTE: redrawingSprite is still contained in MainWindow because I think it'll be rather
+    # confusing to the user if we'd remember it per-sheet. Just clear it when changing.
     redrawingSprite = None
     windowTitle = "RCSS Spritesheet Editor"
     scale = 1.0
@@ -335,6 +148,7 @@ class MainWindow(QMainWindow):
         self.actionRedo.setEnabled(self.curUndoStack.canRedo())
 
         self.loadImage(ssmod.getSheetImage(name))
+        self._cb_actionZoomReset()
         self.statusBar().showMessage(f"Selected spritesheet {name}")
 
     def loadStylesheet(self, filename):
@@ -572,6 +386,7 @@ class MainWindow(QMainWindow):
         self.imageSelect.adjustSize()
         self.scale = 1.0
         self.imageSelect.setScale(1.0)
+        self.scaleImage(1.0)
 
     def _cb_actionAbout(self):
         AboutWindow().exec()
