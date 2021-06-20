@@ -88,6 +88,14 @@ class MainWindow(QMainWindow):
             if d.exec() == QDialog.Accepted:
                 self.createCommand(self.curUndoStack, CommandModifySprite, self, s, **d.newValues)
 
+        def cb_flipX():
+            s = self.spritesList.model().selected()
+            s.flipX()
+
+        def cb_flipY():
+            s = self.spritesList.model().selected()
+            s.flipY()
+
         def cb_redraw():
             s = self.spritesList.model().selected()
             self.redrawingSprite = s
@@ -100,6 +108,14 @@ class MainWindow(QMainWindow):
         editAction = QAction("Edit", self, triggered=cb_edit)
         editAction.setIcon(QIcon.fromTheme("document-properties"))
         self.ctxEditMenu.addAction(editAction)
+
+        flipXAction = QAction("Flip X", self, triggered=cb_flipX)
+        flipXAction.setIcon(QIcon.fromTheme("object-flip-horizontal"))
+        self.ctxEditMenu.addAction(flipXAction)
+
+        flipYAction = QAction("Flip Y", self, triggered=cb_flipY)
+        flipYAction.setIcon(QIcon.fromTheme("object-flip-vertical"))
+        self.ctxEditMenu.addAction(flipYAction)
 
         redrawAction = QAction("Redraw", self, triggered=cb_redraw)
         redrawAction.setIcon(QIcon.fromTheme("list-add"))
@@ -325,10 +341,22 @@ class MainWindow(QMainWindow):
                 painter.drawLine(x, y, x + w, y + h)
                 painter.drawLine(x + w, y, x, y + h)
 
+            text_fm = QFontMetrics(painter.font())
             if self.actionDrawSpriteNames.isChecked():
-                text_fm = QFontMetrics(painter.font())
                 text_width = text_fm.width(spr.name())
                 painter.drawText(x + w/2 - text_width/2, y + h/2, spr.name())
+
+            if self.actionDrawSpriteFlipIndicators.isChecked():
+                drewX = False
+                th = text_fm.height()
+                if spr.isFlippedX():
+                    painter.drawText(x, y + th, "X flipped")
+                    drewX = True
+                if spr.isFlippedY():
+                    offset = th
+                    if drewX:
+                        offset *= 2
+                    painter.drawText(x, y + offset, "Y flipped")
 
     def _cb_spriteStarted(self):
         self.spritesList.model().clearSelection()

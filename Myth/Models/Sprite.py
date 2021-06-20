@@ -16,6 +16,18 @@ class Sprite(QRect):
     def setName(self, name):
         self._name = name
 
+    def isFlippedX(self):
+        return self.flippedW
+
+    def isFlippedY(self):
+        return self.flippedH
+
+    def flipX(self):
+        self.flippedW = not self.flippedW
+
+    def flipY(self):
+        self.flippedH = not self.flippedH
+
     def setSize(self, x, y, w, h):
         # If the sprite would have negative w/h then
         # shift it into the positive for AABB testing

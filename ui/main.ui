@@ -102,6 +102,7 @@
     <addaction name="actionDrawSpriteNames"/>
     <addaction name="actionDrawSpriteDiagonals"/>
     <addaction name="actionDrawSpritesDuringSketching"/>
+    <addaction name="actionDrawSpriteFlipIndicators"/>
     <addaction name="separator"/>
     <addaction name="actionFlipImageX"/>
     <addaction name="actionFlipImageY"/>
@@ -431,6 +432,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionDrawSpriteFlipIndicators">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Draw sprite flip indicators</string>
    </property>
   </action>
  </widget>
