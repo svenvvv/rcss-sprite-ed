@@ -18,6 +18,8 @@ from Myth.Models.SpriteListModel import *
 from Myth.Models.SpritesheetListModel import *
 from Myth.Models.Spritesheet import *
 
+from MythPack.SpritePacker import SpritePacker
+
 class MainWindow(QMainWindow):
     # NOTE: redrawingSprite is still contained in MainWindow because I think it'll be rather
     # confusing to the user if we'd remember it per-sheet. Just clear it when changing.
@@ -55,6 +57,7 @@ class MainWindow(QMainWindow):
         self.actionSave.triggered.connect(self._cb_actionSave)
         self.actionSaveAs.triggered.connect(self._cb_actionSave)
         self.actionReload.triggered.connect(self._cb_actionReload)
+        self.actionPackImages.triggered.connect(self._cb_actionPackImages)
         self.actionQuit.triggered.connect(self.close)
 
         self.actionUndo.triggered.connect(lambda: self.curUndoStack.undo())
@@ -252,7 +255,11 @@ class MainWindow(QMainWindow):
         if image.isNull():
             QMessageBox.warning(self, self.windowTitle, f"Cannot load {filename}: {reader.error()}.")
             return False
+        self.setImage(image)
+        self.statusBar().showMessage(f"Successfully loaded image {filename} ({pixmap.width()}x{pixmap.height()})")
+        return True
 
+    def setImage(self, image):
         pixmap = QPixmap.fromImage(image)
         flipX = self.actionFlipImageX.isChecked()
         flipY = self.actionFlipImageY.isChecked()
@@ -265,9 +272,6 @@ class MainWindow(QMainWindow):
         self.actionReplaceImage.setEnabled(True)
         self.actionSetResolution.setEnabled(True)
         self.actionReload.setEnabled(True)
-
-        self.statusBar().showMessage(f"Successfully loaded image {filename} ({pixmap.width()}x{pixmap.height()})")
-        return True
 
     def scaleImage(self, factor):
         self.scale *= factor
@@ -372,6 +376,14 @@ class MainWindow(QMainWindow):
         ss = self.saveStylesheet()
         res, ok = QInputDialog().getMultiLineText(self, "Output",
                                                   "Saving into RCSS file isn't implemented yet.", ss)
+
+    def _cb_actionPackImages(self):
+        path = QFileDialog.getExistingDirectory(self, "Open image directory", QDir.currentPath())
+        if path:
+            packer = SpritePacker(path, True)
+            img, sprites = packer.pack(256, 256)
+            self.spritesList._sprites = sprites
+            self.setImage(img)
 
     def _cb_actionZoomIn(self):
         self.scaleImage(1.25)

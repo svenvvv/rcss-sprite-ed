@@ -76,6 +76,8 @@
     <addaction name="actionSaveAs"/>
     <addaction name="actionReload"/>
     <addaction name="separator"/>
+    <addaction name="actionPackImages"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -415,6 +417,20 @@
    </property>
    <property name="text">
     <string>Flip image &amp;Y</string>
+   </property>
+  </action>
+  <action name="actionPackImages">
+   <property name="icon">
+    <iconset theme="document-send"/>
+   </property>
+   <property name="text">
+    <string>&amp;Pack spritesheet from images...</string>
+   </property>
+   <property name="statusTip">
+    <string>Pack a spritesheet from loose images in a folder.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
   </action>
  </widget>

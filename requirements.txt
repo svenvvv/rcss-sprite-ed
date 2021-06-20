@@ -1,2 +1,4 @@
 tinycss==0.4
+Pillow==8.2.0
 PySide2==5.15.2
+PyTexturePacker==1.1.0
