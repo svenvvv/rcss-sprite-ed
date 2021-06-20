@@ -97,15 +97,11 @@ class SpriteListModel(QAbstractListModel):
         super(SpriteListModel, self).__init__(*args, **kwargs)
         self._sheet = sheet
         self._sprites = sprites
-        self._undoStack = QUndoStack(self)
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
             ss = self._sprites[index.row()]
             return ss.name()
-
-    def undoStack(self):
-        return self._undoStack
 
     def rowCount(self, index):
         return len(self._sprites)
@@ -215,6 +211,8 @@ class MainWindow(QMainWindow):
     redrawingSprite = None
     windowTitle = "RCSS Spritesheet Editor"
     scale = 1.0
+    undoStacks = {}
+    curUndoStack = None
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -223,15 +221,10 @@ class MainWindow(QMainWindow):
         self._setupImageSelect()
         self._setupActions()
         self._setupMenus()
-        self._setupUndo()
 
         self.loadStylesheet("tests/data/multiple-spritesheets.rcss")
 
         self.show()
-
-    def _setupUndo(self):
-        self.actionUndo.setEnabled(False)
-        self.actionRedo.setEnabled(False)
 
     def _setupImageSelect(self):
         self.imageSelect = ImageSelect()
@@ -253,8 +246,8 @@ class MainWindow(QMainWindow):
         self.actionReload.triggered.connect(self._cb_actionReload)
         self.actionQuit.triggered.connect(self.close)
 
-        self.actionUndo.triggered.connect(lambda: self.spritesList.model().undoStack().undo())
-        self.actionRedo.triggered.connect(lambda: self.spritesList.model().undoStack().redo())
+        self.actionUndo.triggered.connect(lambda: self.curUndoStack.undo())
+        self.actionRedo.triggered.connect(lambda: self.curUndoStack.redo())
 
         self.actionReplaceImage.triggered.connect(self._cb_actionReplaceImage)
         self.actionSetResolution.triggered.connect(self._cb_actionSetResolution)
@@ -278,8 +271,7 @@ class MainWindow(QMainWindow):
             s = self.spritesList.model().selected()
             d = SpriteEditModal(s, self)
             if d.exec() == QDialog.Accepted:
-                stack = self.spritesList.model().undoStack()
-                self.createCommand(stack, CommandModifySprite, self, s, **d.newValues)
+                self.createCommand(self.curUndoStack, CommandModifySprite, self, s, **d.newValues)
 
         def cb_redraw():
             s = self.spritesList.model().selected()
@@ -288,8 +280,7 @@ class MainWindow(QMainWindow):
 
         def cb_delete():
             s = self.spritesList.model().selected()
-            stack = self.spritesList.model().undoStack()
-            self.createCommand(stack, CommandDeleteSprite, self, s)
+            self.createCommand(self.curUndoStack, CommandDeleteSprite, self, s)
 
         editAction = QAction("Edit", self, triggered=cb_edit)
         editAction.setIcon(QIcon.fromTheme("document-properties"))
@@ -334,8 +325,14 @@ class MainWindow(QMainWindow):
 
         self.spritesList.selectionModel().currentChanged.connect(self._cb_spritesListSelectItem)
 
-        self.spritesList.model().undoStack().canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
-        self.spritesList.model().undoStack().canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
+        if name not in self.undoStacks:
+            self.undoStacks[name] = QUndoStack(self)
+
+        self.curUndoStack = self.undoStacks[name]
+        self.curUndoStack.canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
+        self.curUndoStack.canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
+        self.actionUndo.setEnabled(self.curUndoStack.canUndo())
+        self.actionRedo.setEnabled(self.curUndoStack.canRedo())
 
         self.loadImage(ssmod.getSheetImage(name))
         self.statusBar().showMessage(f"Selected spritesheet {name}")
@@ -356,6 +353,7 @@ class MainWindow(QMainWindow):
             return
 
         self.deleteAllSprites()
+        self.undoStacks = {}
 
         parsedSheets = []
         basepath = os.path.dirname(filename)
@@ -518,8 +516,7 @@ class MainWindow(QMainWindow):
     def _cb_spriteFinished(self, r):
         if self.redrawingSprite:
             name = self.redrawingSprite.name()
-            stack = self.spritesList.model().undoStack()
-            if self.createCommand(stack, CommandModifySprite,
+            if self.createCommand(self.curUndoStack, CommandModifySprite,
                                   self, self.redrawingSprite,
                                   r.x(), r.y(), r.width(), r.height()):
                 self.statusBar().showMessage(f"Finished redrawing sprite {self.redrawingSprite.name()}")
@@ -532,9 +529,7 @@ class MainWindow(QMainWindow):
                 return
 
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-            # cmd = CommandCreateSprite(self, spr)
-            stack = self.spritesList.model().undoStack()
-            self.createCommand(stack, CommandCreateSprite, self, spr)
+            self.createCommand(self.curUndoStack, CommandCreateSprite, self, spr)
 
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
@@ -544,16 +539,14 @@ class MainWindow(QMainWindow):
     def _cb_actionReplaceImage(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath())
         if filename:
-            stack = self.spritesList.model().undoStack()
-            self.createCommand(stack, CommandSetImage, self, filename)
+            self.createCommand(self.curUndoStack, CommandSetImage, self, filename)
 
     def _cb_actionSetResolution(self):
         sheet = self.spritesList.model().sheet()
         res, ok = QInputDialog().getInt(self, "Set resolution", "New resolution:",
                                     int(sheet.resolution()), minValue=1)
         if res and ok:
-            stack = self.spritesList.model().undoStack()
-            self.createCommand(stack, CommandSetResolution, self, res)
+            self.createCommand(self.curUndoStack, CommandSetResolution, self, res)
 
     def _cb_spritesListSelectItem(self, it):
         self.spritesList.model().setSelectedByName(it.data())
