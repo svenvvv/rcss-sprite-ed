@@ -249,11 +249,10 @@ class MainWindow(QMainWindow):
         self.ctxEditMenu.popup(pos)
 
     def loadImage(self, filename):
-        image = QImage(filename)
+        reader = QImageReader(filename)
+        image = reader.read()
         if image.isNull():
-            # TODO: rewrite to use QImageReader. Seems like QImage errors go to stderr by default
-            # and thus we can't show them in the message box (?)
-            QMessageBox.warning(self, self.windowTitle, f"Cannot load {filename}.")
+            QMessageBox.warning(self, self.windowTitle, f"Cannot load {filename}: {reader.error()}.")
             return False
 
         pixmap = QPixmap.fromImage(image)
