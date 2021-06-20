@@ -7,6 +7,7 @@ from PySide2.QtUiTools import QUiLoader
 
 from Myth.SpriteEditModal import SpriteEditModal
 from Myth.AboutWindow import AboutWindow
+from Myth.PackerWindow import PackerWindow
 
 from Myth.ImageSelect import ImageSelect
 from Myth.RCSSParser import RCSSParser
@@ -383,6 +384,10 @@ class MainWindow(QMainWindow):
                                                   "Saving into RCSS file isn't implemented yet.", ss)
 
     def _cb_actionPackImages(self):
+        d = PackerWindow().exec()
+
+        return
+
         loadPath = QFileDialog.getExistingDirectory(self, "Open image directory", QDir.currentPath())
         if not loadPath:
             self.statusBar().showMessage("No input directory selected")

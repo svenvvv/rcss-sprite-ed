@@ -58,13 +58,11 @@ class SpritePacker:
     def pathToId(self, path):
         return path.replace("/", "-")
 
-    def pack(self, width, height, **kwargs):
-        print(f"Packing images to max {width}x{height}")
-
-        packer = Packer.create(max_width=width, max_height=height)
+    def pack(self, bg_color=0, **kwargs):
+        packer = Packer.create(**kwargs)
         # TODO: why is this an array??
         atlas = packer._pack(self._images)[0]
-        packed = atlas.dump_image()
+        packed = atlas.dump_image(bg_color)
 
         rmlSprites = []
         for r in atlas.image_rect_list:
