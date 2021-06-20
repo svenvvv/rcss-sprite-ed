@@ -145,7 +145,6 @@ class SpriteListModel(QAbstractListModel):
         return self._selected
 
     def setSelected(self, sprite):
-        print(f"Setselected {sprite.name()}")
         self._selected = sprite
 
     def setSelectedByName(self, spriteName):
@@ -164,7 +163,6 @@ class SpriteListModel(QAbstractListModel):
 
 class SpritesheetListModel(QAbstractListModel):
     _selected = None
-    itemSelectionChanged = Signal(Spritesheet)
 
     def __init__(self, *args, sheets=[], **kwargs):
         super(SpritesheetListModel, self).__init__(*args, **kwargs)
@@ -204,7 +202,6 @@ class SpritesheetListModel(QAbstractListModel):
         for s in self._sheets:
             if s.name() == sheetName:
                 self._selected = s
-                self.itemSelectionChanged.emit(s)
                 return True
         return False
 
@@ -275,11 +272,7 @@ class MainWindow(QMainWindow):
         self.actionAbout.triggered.connect(self._cb_actionAbout)
 
     def _setupMenus(self):
-        # self.spritesList.itemSelectionChanged.connect(self._cb_spritesListSelectItem)
         self.spritesList.customContextMenuRequested.connect(lambda: self.ctxEditMenu.popup(QCursor.pos()))
-
-        # self.spritesList.clicked.connect(self._cb_spritesListSelectItem)
-        # self.spritesheetsList.clicked.connect(self._cb_spritesheetsListSelectItem)
 
         self.ctxEditMenu = QMenu(self)
 
@@ -334,10 +327,14 @@ class MainWindow(QMainWindow):
         ssmod = self.spritesheetsList.model()
         ssmod.setSelectedByName(name)
         mod = ssmod.getSheetListModel(name)
+        prevmod = self.spritesList.model()
 
         self.spritesList.setModel(mod)
-        self.loadImage(ssmod.getSheetImage(name))
+        del prevmod
 
+        self.spritesList.selectionModel().currentChanged.connect(self._cb_spritesListSelectItem)
+
+        self.loadImage(ssmod.getSheetImage(name))
         self.statusBar().showMessage(f"Selected spritesheet {name}")
 
     def loadStylesheet(self, filename):
@@ -369,12 +366,17 @@ class MainWindow(QMainWindow):
                 return
 
         mod = SpritesheetListModel(sheets=parsedSheets)
+        prevmod = self.spritesheetsList.model()
         self.spritesheetsList.setModel(mod)
+
+        # NOTE: Qt docs recommend to delete the previous model
+        del prevmod
 
         self.selectSpritesheet(parsedSheets[0].name())
         self.updateTitle(os.path.basename(filename))
 
-        self.spritesheetsList.model().itemSelectionChanged.connect(self._cb_spritesheetsListSelectItem)
+        # NOTE: connect signals here because setModel overwrites signals :(
+        self.spritesheetsList.selectionModel().currentChanged.connect(lambda cur,prev: self.selectSpritesheet(cur.data()))
 
         self.statusBar().showMessage(f"Successfully loaded {len(parsedSheets)} spritesheets")
 
@@ -531,8 +533,9 @@ class MainWindow(QMainWindow):
         if res and ok:
             CommandSetResolution(self, res)
 
-    def _cb_spritesheetsListSelectItem(self, it):
-        self.selectSpritesheet(it.data())
+    def _cb_spritesListSelectItem(self, it):
+        self.spritesList.model().setSelectedByName(it.data())
+        self.repaint()
 
     def _cb_actionOpen(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
