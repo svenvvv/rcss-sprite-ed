@@ -138,3 +138,30 @@ class CommandModifySprite(QUndoCommand):
         self.sprite.setName(self.prevName)
         self.win.repaint()
         self.win.statusBar().showMessage(f"Un-modified sprite {self.sprite.name()}")
+
+class CommandFlipSprite(QUndoCommand):
+    def __init__(self, mainwin, sprite, axis):
+        super().__init__()
+
+        if axis not in [ "x", "y" ]:
+            raise CommandError(f"Unsupported axis, expected x or y: {axis}")
+
+        self.win = mainwin
+        self.sprite = sprite
+        self.axis = axis
+
+    def flipAxis(self):
+        if self.axis == "x":
+            self.sprite.flipX()
+        else:
+            self.sprite.flipY()
+
+        self.win.repaint()
+
+    def redo(self):
+        self.flipAxis()
+        self.win.statusBar().showMessage(f"Flipped sprite {self.sprite.name()}")
+
+    def undo(self):
+        self.flipAxis()
+        self.win.statusBar().showMessage(f"Un-flipped sprite {self.sprite.name()}")

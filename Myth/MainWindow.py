@@ -90,11 +90,11 @@ class MainWindow(QMainWindow):
 
         def cb_flipX():
             s = self.spritesList.model().selected()
-            s.flipX()
+            self.createCommand(self.curUndoStack, CommandFlipSprite, self, s, "x")
 
         def cb_flipY():
             s = self.spritesList.model().selected()
-            s.flipY()
+            self.createCommand(self.curUndoStack, CommandFlipSprite, self, s, "y")
 
         def cb_redraw():
             s = self.spritesList.model().selected()
@@ -315,6 +315,8 @@ class MainWindow(QMainWindow):
         except CommandIgnored as e:
             self.statusBar().showMessage(str(e))
             return False
+        except Exception as e:
+            QMessageBox.critical(self, self.windowTitle, str(e))
 
     def adjustScrollBar(self, scrollBar, factor):
         val = factor * scrollBar.value() + ((factor - 1) * scrollBar.pageStep()/2)
