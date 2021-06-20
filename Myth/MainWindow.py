@@ -20,6 +20,130 @@ class QListWidgetSprite(QListWidgetItem):
         super().__init__(sprite.name())
         self.sprite = sprite
 
+class SpritesheetError(ValueError):
+    def __init__(self, message):
+        super().__init__(message)
+
+class Spritesheet:
+    requiredProps = [ "src" ]
+    _sprites = []
+    _props = []
+    _basepath = None
+
+    def __init__(self, css):
+        self._name = css.name
+        self._sprites = css.declarations
+        self._props = css.props
+
+        for p in self.requiredProps:
+            if not p in self._props:
+                raise SpritesheetError(f"Missing required property: {p}")
+
+    def setBasepath(self, path):
+        self._basepath = path
+
+    def basepath(self):
+        return self._basepath
+
+    def source(self):
+        return self._props["src"]
+
+    def name(self):
+        return self._name
+
+    def sprites(self):
+        return self._sprites
+
+    def props(self):
+        return self._props
+
+    def serialize(self):
+        ret = f"@spritesheet {self._name}\n"
+        ret += "{\n"
+
+        ret += f"\tsrc: {self._props['src']};\n"
+
+        if self._props["resolution"]:
+            ret += f"\tresolution: {self._props['resolution']}x;\n"
+
+        ret += "\n"
+
+        for s in self._sprites:
+            ret += f"\t{s.toRCSS()}\n"
+
+        ret += "}\n"
+
+        return ret
+
+
+
+class SpriteListModel(QAbstractListModel):
+    _selected = None
+    _redrawing = None
+
+    def __init__(self, *args, sprites=[], **kwargs):
+        super(SpriteListModel, self).__init__(*args, **kwargs)
+        self._sprites = sprites
+        self._undoStack = QUndoStack(self)
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            ss = self._sprites[index.row()]
+            return ss.name()
+
+    def rowCount(self, index):
+        return len(self._sprites)
+
+    def sprites(self):
+        return self._sprites
+
+    def insertRow(self, sprite):
+        self._sprites.append(sprite)
+
+    def removeRow(self, sprite):
+        print(sprite)
+        self._sprites.remove(sprite)
+
+    def hitTest(self, pos):
+        hit = []
+        for spr in self._sprites:
+            if spr.aabbTest(pos):
+                hit.append(spr)
+        return hit
+
+    def select(self, sprite):
+        print(f"Select: {sprite}")
+
+    def clearSelection(self):
+        self._selected = None
+
+
+class SpritesheetListModel(QAbstractListModel):
+    def __init__(self, *args, sheets=[], **kwargs):
+        super(SpritesheetListModel, self).__init__(*args, **kwargs)
+        self._sheets = sheets
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            ss = self._sheets[index.row()]
+            return ss.name()
+
+    def rowCount(self, index):
+        return len(self._sheets)
+
+    def getSheetListModel(self, sheetName):
+        for s in self._sheets:
+            if s.name() == sheetName:
+                return SpriteListModel(sprites=s.sprites())
+
+    def getSheetImage(self, sheetName):
+        for s in self._sheets:
+            if s.name() == sheetName:
+                return f"{s.basepath()}/{s.source()}"
+
+    def sheets(self):
+        return self._sheets
+
 
 class MainWindow(QMainWindow):
     css = None
@@ -29,6 +153,8 @@ class MainWindow(QMainWindow):
     redrawingSprite = None
     windowTitle = "RCSS Spritesheet Editor"
     scale = 1.0
+    spritesheets = {}
+    currentSpritesheet = None
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -39,16 +165,19 @@ class MainWindow(QMainWindow):
         self._setupMenus()
         self._setupUndo()
 
+        self.loadStylesheet("tests/data/multiple-spritesheets.rcss")
+
         self.show()
 
     def _setupUndo(self):
         self.undo = QUndoStack(self)
 
+        self.undo.canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
+        self.undo.canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
+
         self.actionUndo.setEnabled(False)
         self.actionRedo.setEnabled(False)
 
-        self.undo.canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
-        self.undo.canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
 
     def _setupImageSelect(self):
         self.imageSelect = ImageSelect()
@@ -87,8 +216,11 @@ class MainWindow(QMainWindow):
         self.actionAbout.triggered.connect(self._cb_actionAbout)
 
     def _setupMenus(self):
-        self.spritesList.itemSelectionChanged.connect(self._cb_spritesListSelectItem)
+        # self.spritesList.itemSelectionChanged.connect(self._cb_spritesListSelectItem)
         self.spritesList.customContextMenuRequested.connect(self._cb_spritesListOpenCtxMenu)
+
+        self.spritesList.clicked.connect(self._cb_spritesListSelectItem)
+        self.spritesheetsList.clicked.connect(self._cb_spritesheetsListSelectItem)
 
         self.ctxEditMenu = QMenu(self)
 
@@ -126,36 +258,39 @@ class MainWindow(QMainWindow):
         cancelAction.setIcon(QIcon.fromTheme("go-previous"))
         self.ctxRedrawMenu.addAction(cancelAction)
 
-    def updateTitle(self):
-        if self.css and self.css.name:
-            self.setWindowTitle(f"{self.windowTitle} - {self.css.name}")
+    def updateTitle(self, filename=None):
+        if filename:
+            self.setWindowTitle(f"{self.windowTitle} - {filename}")
         else:
             self.setWindowTitle(self.windowTitle)
 
     def addSprite(self, spr):
-        it = QListWidgetSprite(spr)
-        self.spritesList.addItem(it)
-
-        spr.QListItemRef = it
-        self.sprites.append(spr)
+        self.spritesList.model().insertRow(spr)
 
     def deleteSprite(self, s):
-        self.unlinkSprite(s)
-        self.sprites.remove(s)
-        self.spritesList.setCurrentItem(None)
-
-    def unlinkSprite(self, s):
-        """ Unlink from QListItemRef """
-        if s.QListItemRef:
-            lw = s.QListItemRef.listWidget()
-            lw.takeItem(lw.row(s.QListItemRef))
+        # self.sprites.remove(s)
+        mod = self.spritesList.model()
+        mod.removeRow(s)
+        mod.clearSelection()
+        # self.spritesList.setCurrentItem(None)
 
     def deleteAllSprites(self):
         self.redrawingSprite = None
         self.selectedSprite = None
-        for s in self.sprites:
-            self.unlinkSprite(s)
-        self.sprites.clear()
+        # self.sprites.clear()
+
+    def selectSpritesheet(self, name):
+        self.selectedSprite = None
+        self.redrawingSprite = None
+        # self.currentSpritesheet = self.spritesheets[name]
+
+        ssmod = self.spritesheetsList.model()
+        mod = ssmod.getSheetListModel(name)
+
+        self.spritesList.setModel(mod)
+        self.loadImage(ssmod.getSheetImage(name))
+
+        self.statusBar().showMessage(f"Selected spritesheet {name}")
 
     def loadStylesheet(self, filename):
         parser = RCSSParser()
@@ -168,43 +303,34 @@ class MainWindow(QMainWindow):
 
         spritesheets = list(filter(lambda r: r.at_keyword == "@spritesheet", css.rules))
 
-        if len(spritesheets) > 1:
-            QMessageBox.critical(self, self.windowTitle,
-                                 f"File contained {len(spritesheets)} spritesheets, currently only one is supported")
+        if len(spritesheets) == 0:
+            QMessageBox.critical(self, self.windowTitle, f"Stylesheet does not contain any spritesheets!")
             return
 
         self.deleteAllSprites()
 
+        parsedSheets = []
+        basepath = os.path.dirname(filename)
         for ss in spritesheets:
-            self.css = ss
-            for d in ss.declarations:
-                it = QListWidgetSprite(d)
-                self.spritesList.addItem(it)
+            try:
+                s = Spritesheet(ss)
+                s.setBasepath(basepath)
+                parsedSheets.append(s)
+            except SpritesheetError as e:
+                QMessageBox.critical(self, self.windowTitle, f"Error parsing \"{ss.name}\": {e}")
+                return
 
-                d.QListItemRef = it
-                self.sprites.append(d)
+        mod = SpritesheetListModel(sheets=parsedSheets)
+        self.spritesheetsList.setModel(mod)
 
-        self.basepath = os.path.dirname(filename)
-        self.loadImage(self.basepath + "/" + self.css.props["src"])
-        self.updateTitle()
-        self.statusBar().showMessage(f"Successfully loaded stylesheet {filename} with {len(self.css.declarations)} sprites")
+        self.selectSpritesheet(parsedSheets[0].name())
+        self.updateTitle(os.path.basename(filename))
+        self.statusBar().showMessage(f"Successfully loaded {len(parsedSheets)} spritesheets")
 
     def saveStylesheet(self):
-        ss = self.css
-
-        ret = f"@spritesheet {ss.name}\n"
-        ret += "{\n"
-
-        ret += f"\tsrc: {ss.props['src']};\n"
-        ret += f"\tresolution: {ss.props['resolution']}x;\n"
-
-        ret += "\n"
-
-        for s in self.sprites:
-            ret += f"\t{s.toRCSS()}\n"
-
-        ret += "}\n"
-
+        ret = ""
+        for ss in self.spritesheetsList.model().sheets():
+            ret += ss.serialize()
         return ret
 
     def repaint(self):
@@ -255,10 +381,7 @@ class MainWindow(QMainWindow):
             self.openCtxRedrawMenu(pos)
             return
 
-        hit = []
-        for spr in self.sprites:
-            if spr.aabbTest(target):
-                hit.append(spr)
+        hit = self.spritesList.model().hitTest(target)
 
         if len(hit) == 0:
             return
@@ -270,13 +393,8 @@ class MainWindow(QMainWindow):
             return
 
         selHit = hit[0]
-        if selHit.QListItemRef:
-            it = selHit.QListItemRef
-            l = it.listWidget()
-            l.setCurrentItem(it)
-            self.openCtxEditMenu(selHit, pos)
-        else:
-            QMessageBox.critical(self, self.windowTitle, "Sprite is missing list ref!")
+        self.spritesList.model().select(selHit)
+        self.openCtxEditMenu(selHit, pos)
 
     def loadImage(self, filename):
         image = QImage(filename)
@@ -320,7 +438,7 @@ class MainWindow(QMainWindow):
         if not self.actionDrawSpriteOutlines.isChecked():
             return
 
-        for spr in self.sprites:
+        for spr in self.spritesList.model().sprites():
             x = spr.x()
             y = spr.y()
             w = spr.width()
@@ -359,7 +477,8 @@ class MainWindow(QMainWindow):
                 return
 
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-            CommandCreateSprite(self, spr)
+            self.addSprite(spr)
+            # CommandCreateSprite(self, spr)
 
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
@@ -389,6 +508,9 @@ class MainWindow(QMainWindow):
             if spr:
                 self.selectedSprite = spr
                 self.repaint()
+
+    def _cb_spritesheetsListSelectItem(self, it):
+        self.selectSpritesheet(it.data())
 
     def _cb_actionOpen(self):
         filename,_ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
