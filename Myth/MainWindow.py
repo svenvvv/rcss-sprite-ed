@@ -201,7 +201,6 @@ class MainWindow(QMainWindow):
         self.spritesheetsList.selectionModel().currentChanged.connect(lambda cur,prev: self.selectSpritesheet(cur.data()))
         self.statusBar().showMessage(f"Successfully loaded {len(sheets)} spritesheets")
 
-
     def saveStylesheet(self):
         ret = ""
         for ss in self.spritesheetsList.model().sheets():
@@ -384,33 +383,14 @@ class MainWindow(QMainWindow):
                                                   "Saving into RCSS file isn't implemented yet.", ss)
 
     def _cb_actionPackImages(self):
-        d = PackerWindow().exec()
-
-        return
-
-        loadPath = QFileDialog.getExistingDirectory(self, "Open image directory", QDir.currentPath())
-        if not loadPath:
-            self.statusBar().showMessage("No input directory selected")
-            return
-
-        imagePath,_ = QFileDialog.getSaveFileName(self, "Select output image file", QDir.currentPath())
-        if not imagePath:
-            self.statusBar().showMessage("No output file selected")
-            return
-
-        packer = SpritePacker(loadPath, True)
-        img, sprites = packer.pack(256, 256)
-
-        img.save(imagePath, "PNG")
-
-        file = os.path.basename(imagePath)
-        base = os.path.dirname(imagePath)
-
-        print(imagePath, file, base)
-
-        ss = Spritesheet(base, "packed", sprites, file)
-        self.loadParsedStylesheets([ss], False)
-        self.setImage(img)
+        d = PackerWindow()
+        if d.exec() == QDialog.Accepted:
+            mod = self.spritesheetsList.model()
+            if isinstance(mod, SpritesheetListModel):
+                mod.insertRow(d.generatedSheet)
+            else:
+                self.loadParsedStylesheets([ d.generatedSheet ])
+            self.statusBar().showMessage("Successfully packed a spritesheet")
 
     def _cb_actionZoomIn(self):
         self.scaleImage(1.25)

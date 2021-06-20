@@ -19,6 +19,13 @@ class SpritesheetListModel(QAbstractListModel):
     def rowCount(self, index):
         return len(self._sheets)
 
+    def insertRow(self, sheet):
+        l = len(self._sheets)
+        self.beginInsertRows(QModelIndex(), l, l+1)
+        self._sheets.append(sheet)
+        self.endInsertRows()
+        return True
+
     def getSheetListModel(self, sheetName):
         for s in self._sheets:
             if s.name() == sheetName:
