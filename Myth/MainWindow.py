@@ -35,8 +35,6 @@ class MainWindow(QMainWindow):
         self._setupActions()
         self._setupMenus()
 
-        self.loadStylesheet("tests/data/multiple-spritesheets.rcss")
-
         self.show()
 
     def _setupImageSelect(self):
