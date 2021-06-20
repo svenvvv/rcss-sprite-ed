@@ -44,7 +44,8 @@ class PackerWindow(QDialog):
             "border_padding": self.borderPaddingSpinBox.value(),
             "shape_padding": self.shapePaddingSpinBox.value(),
             "inner_padding": self.innerPaddingSpinBox.value(),
-            "force_square": self.squareOutputCheckBox.isChecked()
+            "force_square": self.squareOutputCheckBox.isChecked(),
+            "enable_rotated": False
         }
 
         try:
