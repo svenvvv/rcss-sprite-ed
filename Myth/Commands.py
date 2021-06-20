@@ -39,7 +39,7 @@ class CommandSetImage(QUndoCommand):
 
         self.win = mainwin
         self.new = new
-        self.prev = f"{self.win.basepath}/{self.win.css.props['src']}"
+        self.prev = self.win.spritesList.model().sheet().sourceLongPath()
 
         if os.path.basename(self.new) != self.prev:
             self.win.undo.push(self)
@@ -48,7 +48,8 @@ class CommandSetImage(QUndoCommand):
 
     def do(self, new):
         if self.win.loadImage(new):
-            self.win.css.props["src"] = os.path.basename(new)
+            self.win.spritesList.model().sheet().setBasepath(os.path.dirname(new))
+            self.win.spritesList.model().sheet().setSource(os.path.basename(new))
         else:
             print(f"Failed to load image {new}")
 
