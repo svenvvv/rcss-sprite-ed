@@ -7,6 +7,7 @@ Requires Python and Qt5.
 Features:
 
 * Create new sprites (mouse drawing),
+* Pack images from folders into RCSS spritesheets,
 * Delete sprites,
 * Modify existing sprites (redraw using mouse or enter values),
 * Replace source image (spritesheet `src` attribute),
