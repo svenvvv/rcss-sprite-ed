@@ -61,12 +61,18 @@ class CommandCreateSprite(QUndoCommand):
         self.win = mainwin
         self.sprite = sprite
 
+        if self.win.spritesList.model().findDupes(sprite.name()):
+            QMessageBox.warning(self.win, self.win.windowTitle, f"Duplicate sprite name: {self.sprite.name()}")
+            return
+
         self.win.undo.push(self)
 
     def redo(self):
-        self.win.spritesList.model().insertRow(self.sprite)
-        self.win.repaint()
-        self.win.statusBar().showMessage(f"Added sprite {self.sprite.name()}")
+        if self.win.spritesList.model().insertRow(self.sprite):
+            self.win.repaint()
+            self.win.statusBar().showMessage(f"Added sprite {self.sprite.name()}")
+        else:
+            QMessageBox.warning(self.win, self.win.windowTitle, f"Duplicate sprite name: {self.sprite.name()}")
 
     def undo(self):
         self.win.spritesList.model().removeRow(self.sprite)
@@ -85,14 +91,15 @@ class CommandDeleteSprite(QUndoCommand):
 
     def redo(self):
         self.win.spritesList.model().removeRow(self.sprite)
-        self.win.selectedSprite = None
         self.win.repaint()
         self.win.statusBar().showMessage(f"Deleted sprite {self.sprite.name()}")
 
     def undo(self):
-        self.win.spritesList.model().insertRow(self.sprite)
-        self.win.repaint()
-        self.win.statusBar().showMessage(f"Added sprite {self.sprite.name()}")
+        if self.win.spritesList.model().insertRow(self.sprite):
+            self.win.repaint()
+            self.win.statusBar().showMessage(f"Added sprite {self.sprite.name()}")
+        else:
+            QMessageBox.warning(self.win, self.win.windowTitle, f"Duplicate sprite name: {self.sprite.name()}")
 
 
 class CommandModifySprite(QUndoCommand):

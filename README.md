@@ -53,12 +53,6 @@ which you can manually paste into your stylesheet.
 
 It's required to provide an existing one from an RCSS file.
 
-* No support for stylesheets containing multiple spritesheets.
-
-The loader code does support multiple, but at the moment it's hardcoded to exit
-without prejudice :).
-If you wish to extend it then see `loadStylesheet()` in `MainWindow.py`.
-
 * Bugs, probably.
 
 Haven't had a chance to work on my UI, as I was writing this tool instead :).

@@ -110,16 +110,29 @@ class SpriteListModel(QAbstractListModel):
     def sprites(self):
         return self._sprites
 
+    def findDupes(self, name):
+        dupes = filter(lambda s: s.name() == name, self._sprites)
+        if len(list(dupes)) > 0:
+            return True
+        return False
+
     def insertRow(self, sprite):
+        if self.findDupes(sprite.name()):
+            return False
+
         l = len(self._sprites)
         self.beginInsertRows(QModelIndex(), l, l+1)
         self._sprites.append(sprite)
         self.endInsertRows()
+        return True
 
     def removeRow(self, sprite):
+        idx = self._sprites.index(sprite)
+        self.beginRemoveRows(QModelIndex(), idx, idx)
         if self._selected == sprite:
             self._selected = None
         self._sprites.remove(sprite)
+        self.endRemoveRows()
 
     def hitTest(self, pos):
         hit = []
@@ -252,7 +265,7 @@ class MainWindow(QMainWindow):
         self.actionSetResolution.triggered.connect(self._cb_actionSetResolution)
 
         self.actionZoomIn.triggered.connect(self._cb_actionZoomIn)
-        self.actionZoomOut.triggered.connect(self._cb_ZoomOut)
+        self.actionZoomOut.triggered.connect(self._cb_actionZoomOut)
         self.actionZoomReset.triggered.connect(self._cb_actionZoomReset)
 
         self.actionDrawSpritesDuringSketching.triggered.connect(self._cb_actionDrawSpritesDuringSketching)
@@ -265,7 +278,7 @@ class MainWindow(QMainWindow):
         # self.spritesList.itemSelectionChanged.connect(self._cb_spritesListSelectItem)
         self.spritesList.customContextMenuRequested.connect(lambda: self.ctxEditMenu.popup(QCursor.pos()))
 
-        self.spritesList.clicked.connect(self._cb_spritesListSelectItem)
+        # self.spritesList.clicked.connect(self._cb_spritesListSelectItem)
         # self.spritesheetsList.clicked.connect(self._cb_spritesheetsListSelectItem)
 
         self.ctxEditMenu = QMenu(self)
@@ -361,7 +374,7 @@ class MainWindow(QMainWindow):
         self.selectSpritesheet(parsedSheets[0].name())
         self.updateTitle(os.path.basename(filename))
 
-        self.spritesheetsList.model().itemSelectionChanged.connect(self._cb_spritesListSelectItem)
+        self.spritesheetsList.model().itemSelectionChanged.connect(self._cb_spritesheetsListSelectItem)
 
         self.statusBar().showMessage(f"Successfully loaded {len(parsedSheets)} spritesheets")
 
@@ -415,6 +428,7 @@ class MainWindow(QMainWindow):
 
         selHit = hit[0]
         self.spritesList.model().setSelected(selHit)
+        self.repaint()
         self.ctxEditMenu.popup(pos)
 
     def loadImage(self, filename):
@@ -517,14 +531,6 @@ class MainWindow(QMainWindow):
         if res and ok:
             CommandSetResolution(self, res)
 
-    def _cb_spritesListSelectItem(self):
-        sel = self.spritesList.selectedItems()
-        if len(sel) > 0:
-            spr = self.findSpriteByQItem(sel[0])
-            if spr:
-                self.selectedSprite = spr
-                self.repaint()
-
     def _cb_spritesheetsListSelectItem(self, it):
         self.selectSpritesheet(it.data())
 
@@ -541,7 +547,7 @@ class MainWindow(QMainWindow):
     def _cb_actionZoomIn(self):
         self.scaleImage(1.25)
 
-    def _cb_ZoomOut(self):
+    def _cb_actionZoomOut(self):
         self.scaleImage(0.8)
 
     def _cb_actionZoomReset(self):
