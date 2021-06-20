@@ -4,34 +4,28 @@ from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 
-class CommandSetProp(QUndoCommand):
-    def __init__(self, mainwin, dst, prop, new):
+
+class CommandSetResolution(QUndoCommand):
+    def __init__(self, mainwin, new):
         super().__init__()
 
         self.win = mainwin
-        self.dst = dst
-        self.prop = prop
         self.new = new
-
-        if isinstance(dst, dict):
-            self.prev = dst[prop]
-            self.setter = lambda d, p, v: d.update({ p: v })
-        else:
-            print(f"CommandSetProp unsupported type: {type(dst)}")
-            raise
+        self.prev = self.win.spritesList.model().sheet().resolution()
 
         if self.new != self.prev:
             self.win.undo.push(self)
         else:
-            self.win.statusBar().showMessage("Old and new value are the same, ignoring")
+            self.win.statusBar().showMessage("Old and new resolution are the same, ignoring")
 
     def redo(self):
-        self.setter(self.dst, self.prop, self.new)
-        self.win.statusBar().showMessage(f"Set {self.prop} from {self.prev} to {self.new}")
+        self.win.spritesList.model().sheet().setResolution(self.new)
+        self.win.statusBar().showMessage(f"Set resolution from {self.prev} to {self.new}")
 
     def undo(self):
-        self.setter(self.dst, self.prop, self.prev)
-        self.win.statusBar().showMessage(f"Set {self.prop} from {self.new} to {self.prev}")
+        self.win.spritesList.model().sheet().setResolution(self.prev)
+        self.win.statusBar().showMessage(f"Set resolution from {self.new} to {self.prev}")
+
 
 class CommandSetImage(QUndoCommand):
     def __init__(self, mainwin, new):
@@ -59,6 +53,7 @@ class CommandSetImage(QUndoCommand):
     def undo(self):
         self.do(self.prev)
 
+
 class CommandCreateSprite(QUndoCommand):
     def __init__(self, mainwin, sprite):
         super().__init__()
@@ -78,6 +73,7 @@ class CommandCreateSprite(QUndoCommand):
         self.win.selectedSprite = None
         self.win.repaint()
         self.win.statusBar().showMessage(f"Deleted sprite {self.sprite.name()}")
+
 
 class CommandDeleteSprite(QUndoCommand):
     def __init__(self, mainwin, sprite):

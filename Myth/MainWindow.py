@@ -45,6 +45,12 @@ class Spritesheet:
     def basepath(self):
         return self._basepath
 
+    def resolution(self):
+        return self._props["resolution"]
+
+    def setResolution(self, res):
+        self._props["resolution"] = res
+
     def source(self):
         return self._props["src"]
 
@@ -187,7 +193,6 @@ class SpritesheetListModel(QAbstractListModel):
         self._selected = None
 
 class MainWindow(QMainWindow):
-    css = None
     basepath = None
     sprites = []
     redrawingSprite = None
@@ -512,7 +517,7 @@ class MainWindow(QMainWindow):
 
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
-        if not self.loadImage(f"{self.basepath}/{self.css.props['src']}"):
+        if not self.loadImage(self.spritesList.model().sheet().sourceLongPath()):
             self.statusBar().showMessage("Image reload failed!")
 
     def _cb_actionReplaceImage(self):
@@ -521,10 +526,11 @@ class MainWindow(QMainWindow):
             CommandSetImage(self, filename)
 
     def _cb_actionSetResolution(self):
+        sheet = self.spritesList.model().sheet()
         res, ok = QInputDialog().getInt(self, "Set resolution", "New resolution:",
-                                    int(self.css.props["resolution"]), minValue=1)
+                                    int(sheet.resolution()), minValue=1)
         if res and ok:
-            CommandSetProp(self, self.css.props, "resolution", res)
+            CommandSetResolution(self, res)
 
     def _cb_spritesListOpenCtxMenu(self, pos):
         it = self.spritesList.selectedItems()[0]
