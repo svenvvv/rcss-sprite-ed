@@ -39,12 +39,6 @@ Run the program.
 
 ## TODO
 
-* Doesn't support "flipping" sprites (negative coordinates).
-
-Loading stylesheets with flipped sprites is supported and during saving they
-will be exported correctly, but as of now there is no way to flip created
-sprites in the editor.
-
 * Doesn't support saving into RCSS files.
 
 Presently, when you click save, then the program will present you with text
