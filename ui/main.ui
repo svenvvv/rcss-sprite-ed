@@ -357,6 +357,9 @@
    </property>
   </action>
   <action name="actionUndo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset theme="edit-undo">
      <normaloff>.</normaloff>.</iconset>
@@ -372,6 +375,9 @@
    </property>
   </action>
   <action name="actionRedo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset theme="edit-redo">
      <normaloff>.</normaloff>.</iconset>
@@ -422,7 +428,8 @@
   </action>
   <action name="actionPackImages">
    <property name="icon">
-    <iconset theme="document-send"/>
+    <iconset theme="document-send">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Pack spritesheet from images...</string>
