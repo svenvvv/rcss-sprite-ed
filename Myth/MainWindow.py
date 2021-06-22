@@ -1,3 +1,4 @@
+import PIL
 import os
 
 from PySide2.QtGui import *
@@ -271,14 +272,14 @@ class MainWindow(QMainWindow):
         self.ctxEditMenu.popup(pos)
 
     def loadImage(self, filename):
-        reader = QImageReader(filename)
-        image = reader.read()
-        if image.isNull():
-            QMessageBox.warning(self, self.windowTitle, f"Cannot load {filename}: {reader.error()}.")
+        try:
+            image = PIL.Image.open(filename)
+            self.setImage(PIL.ImageQt.ImageQt(image))
+            self.statusBar().showMessage(f"Successfully loaded image {filename}")
+            return True
+        except Exception as e:
+            QMessageBox.warning(self, self.windowTitle, f"Failed to load {filename}: {e}.")
             return False
-        self.setImage(image)
-        self.statusBar().showMessage(f"Successfully loaded image {filename}")
-        return True
 
     def setImage(self, image):
         pixmap = QPixmap.fromImage(image)

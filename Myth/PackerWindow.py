@@ -1,3 +1,5 @@
+import PIL
+import functools
 import os
 
 from PySide2.QtCore import *
@@ -9,7 +11,6 @@ from Myth.Models.Spritesheet import Spritesheet
 from Myth.UiLoader import UiLoader
 
 from MythPack.SpritePacker import SpritePacker, PackerException
-
 
 class PackerWindow(QDialog):
     _color = 0x00000000
@@ -76,10 +77,28 @@ class PackerWindow(QDialog):
         self.inputEdit.setText(loadPath)
 
     def _cb_outputBrowse(self):
-        imagePath,_ = QFileDialog.getSaveFileName(self,
-                                                  "Select output image file", QDir.currentPath())
-        if not imagePath:
+        # TODO: there IS a nice way to get this from PIL, but I couldn't get it to work
+        # (see PIL.features.pilinfo()), so it's all manual work for now..
+        imgFmts = [
+            [ "PNG image (*.apng, *.png)",  "PNG" ],
+            [ "BMP image (*.bmp)",          "BMP" ],
+            [ "JPEG image (*.jpg *.jpeg)",  "JPG" ],
+            [ "GIF image (*.gif)",          "GIF" ],
+            [ "JPEG2000 image (*.j2c, *.j2k, *.jp2, *.jpc, *.jpf, *.jpx)", "JP2"],
+            [ "TGA image (*.tga)",          "TGA" ],
+            [ "All files (*.*)",            None  ],
+        ]
+        qtFmts = functools.reduce(lambda a, v: a + ";;" + v[0], imgFmts, "")[2:]
+        imagePath, fmt = QFileDialog.getSaveFileName(self, "Select output image file",
+                                                     QDir.currentPath(), qtFmts)
+        if not imagePath or not fmt:
             return
+
+        imgFmtEntry = list(filter(lambda v: v[0] == fmt, imgFmts))[0]
+        self._outFmt = imgFmtEntry[1]
+
+        if self._outFmt and not imagePath.lower().endswith(self._outFmt.lower()):
+            imagePath += "." + self._outFmt.lower()
         self.outputEdit.setText(imagePath)
 
     def accept(self):
@@ -87,9 +106,10 @@ class PackerWindow(QDialog):
 
         img, sprites = self.generate()
         if not img or not sprites:
+            QMessageBox.critical(self, self.windowTitle(), "Failed to generate spritesheet")
             return
 
-        img.save(imagePath, "PNG")
+        img.save(imagePath, self._outFmt)
 
         file = os.path.basename(imagePath)
         base = os.path.dirname(imagePath)
