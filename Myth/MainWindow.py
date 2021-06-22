@@ -1,5 +1,6 @@
 import PIL
 import os
+import Myth.Util
 
 from PySide2.QtGui import *
 from PySide2.QtCore import *
@@ -388,7 +389,8 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Image reload failed!")
 
     def _cb_actionReplaceImage(self):
-        filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath())
+        fmts = Myth.Util.supportedImageFormatsQtAllInOne()
+        filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath(), fmts)
         if filename:
             self.createCommand(self.curUndoStack, CommandSetImage, self, filename)
 
@@ -404,7 +406,9 @@ class MainWindow(QMainWindow):
         self.repaint()
 
     def _cb_actionOpen(self):
-        filename,_ = QFileDialog.getOpenFileName(self, "Open File", QDir.currentPath())
+        fmts = "RCSS stylesheet (*.rcss);;All files (*.*)"
+        filename,_ = QFileDialog.getOpenFileName(self, "Open stylesheet",
+                                                 QDir.currentPath(), fmts)
         if filename:
             self.loadStylesheet(filename)
 

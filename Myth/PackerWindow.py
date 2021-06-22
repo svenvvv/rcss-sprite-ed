@@ -1,13 +1,13 @@
 import PIL
 import functools
 import os
+import Myth.Util
 
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 from Myth.Models.Spritesheet import Spritesheet
-
 from Myth.UiLoader import UiLoader
 
 from MythPack.SpritePacker import SpritePacker, PackerException
@@ -77,25 +77,13 @@ class PackerWindow(QDialog):
         self.inputEdit.setText(loadPath)
 
     def _cb_outputBrowse(self):
-        # TODO: there IS a nice way to get this from PIL, but I couldn't get it to work
-        # (see PIL.features.pilinfo()), so it's all manual work for now..
-        imgFmts = [
-            [ "PNG image (*.apng, *.png)",  "PNG" ],
-            [ "BMP image (*.bmp)",          "BMP" ],
-            [ "JPEG image (*.jpg *.jpeg)",  "JPG" ],
-            [ "GIF image (*.gif)",          "GIF" ],
-            [ "JPEG2000 image (*.j2c, *.j2k, *.jp2, *.jpc, *.jpf, *.jpx)", "JP2"],
-            [ "TGA image (*.tga)",          "TGA" ],
-            [ "All files (*.*)",            None  ],
-        ]
-        qtFmts = functools.reduce(lambda a, v: a + ";;" + v[0], imgFmts, "")[2:]
+        imgFmts = Myth.Util.supportedImageFormatsQt()
         imagePath, fmt = QFileDialog.getSaveFileName(self, "Select output image file",
-                                                     QDir.currentPath(), qtFmts)
+                                                     QDir.currentPath(), imgFmts)
         if not imagePath or not fmt:
             return
 
-        imgFmtEntry = list(filter(lambda v: v[0] == fmt, imgFmts))[0]
-        self._outFmt = imgFmtEntry[1]
+        self._outFmt = Myth.Util.supportedImageFormatFromQt(fmt)
 
         if self._outFmt and not imagePath.lower().endswith(self._outFmt.lower()):
             imagePath += "." + self._outFmt.lower()
