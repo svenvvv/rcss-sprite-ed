@@ -20,6 +20,17 @@ class SpritesheetRule(object):
                 ' {0.name}>'.format(self))
 
 
+class RCSSProp:
+    def __init__(self, type, required):
+        self.type = type
+        self.required = required
+
+    def cast(self, value):
+        if self.type:
+            return self.type(value)
+        return value
+
+
 class RCSSParser(tinycss.CSS21Parser):
     def __init__(self):
         # A bit of a HACK :)
@@ -33,8 +44,11 @@ class RCSSParser(tinycss.CSS21Parser):
         return "UNNAMED"
 
     def parse_spritesheet_declarations(self, input_decls):
-        spritesheetReservedProps = [ "src", "resolution" ]
-        spritesheetReservedPropsTypes = [ None, int ]
+        reservedProps = {
+            "src": RCSSProp(str, True),
+            "resolution": RCSSProp(float, False)
+        }
+        reservedPropsGot = []
         props = dict()
         decls = []
         errors = []
@@ -43,17 +57,15 @@ class RCSSParser(tinycss.CSS21Parser):
             # A bit of a HACK, in the try block we're checking if it's a reserved prop,
             # which throws on failure and then gets parsed as a regular property ;)
             try:
-                # NOTE list.index() throws ValueError if value not found
-                ridx = spritesheetReservedProps.index(d.name)
+                rprop = reservedProps[d.name]
                 # Since all the reserved props are a single value then concat every token
                 # that belongs to these props.
                 s = "".join(list(map(lambda v: str(v.value), d.value)))
 
-                if spritesheetReservedPropsTypes[ridx]:
-                    props[d.name] = spritesheetReservedPropsTypes[ridx](s)
-                else:
-                    props[d.name] = s
-            except ValueError:
+                reservedPropsGot.append(d.name)
+
+                props[d.name] = rprop.cast(s)
+            except KeyError:
                 sprite_props = []
                 for t in d.value:
                     if t.type == "S":
@@ -69,6 +81,11 @@ class RCSSParser(tinycss.CSS21Parser):
                 decls.append(Sprite(d.name,
                                     sprite_props[0], sprite_props[1],
                                     sprite_props[2], sprite_props[3]))
+
+        for k,v in reservedProps.items():
+            if k not in reservedPropsGot and v.required:
+                self.hadSpritesheetError = True
+                errors.append(f"Missing required property of type {v.type.__name__}: {k}")
 
         return decls, props, errors
 

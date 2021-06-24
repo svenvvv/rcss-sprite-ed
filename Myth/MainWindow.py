@@ -1,4 +1,3 @@
-import PIL
 import os
 import Myth.Util
 import functools
@@ -222,7 +221,7 @@ class MainWindow(QMainWindow):
 
         if parser.hadSpritesheetError:
             print("CSS errors:", css.errors)
-            QMessageBox.critical(self, self.windowTitle, f"Error loading file {filename}")
+            QMessageBox.critical(self, self.windowTitle, f"Error loading file {filename}: {css.errors}")
             return
 
         spritesheets = list(filter(lambda r: r.at_keyword == "@spritesheet", css.rules))
@@ -235,7 +234,8 @@ class MainWindow(QMainWindow):
         basepath = os.path.dirname(filename)
         for ss in spritesheets:
             try:
-                s = Spritesheet.fromRCSS(ss)
+                s = Spritesheet(basepath, ss.name, ss.declarations,
+                                ss.props["src"], ss.props.get("resolution"))
                 s.setBasepath(basepath)
                 parsedSheets.append(s)
             except SpritesheetError as e:
@@ -440,8 +440,8 @@ class MainWindow(QMainWindow):
 
     def _cb_actionSetResolution(self):
         sheet = self.spritesList.model().sheet()
-        res, ok = QInputDialog().getInt(self, "Set resolution", "New resolution:",
-                                    int(sheet.resolution()), minValue=1)
+        res, ok = QInputDialog().getDouble(self, "Set resolution", "New resolution:",
+                                           sheet.resolution(), minValue=0)
         if res and ok:
             self.createCommand(self.curUndoStack, CommandSetResolution, self, res)
 

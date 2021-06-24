@@ -13,16 +13,6 @@ class Spritesheet:
         self._src = src
         self._resolution = resolution
 
-    @staticmethod
-    def fromRCSS(css):
-        try:
-            props = css.props
-            return Spritesheet("", css.name,
-                               css.declarations,
-                               props["src"], props["resolution"])
-        except KeyError as e:
-            raise SpritesheetError(f"Missing property {e}")
-
     def setBasepath(self, path):
         self._basepath = path
 
