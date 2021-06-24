@@ -25,19 +25,9 @@ class PackerWindow(QDialog):
         self.inputBrowseButton.clicked.connect(self._cb_inputBrowse)
         self.outputBrowseButton.clicked.connect(self._cb_outputBrowse)
 
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-
         self.show()
 
-    def generate(self):
-        loadPath = self.inputEdit.text()
-        imagePath = self.outputEdit.text()
-
-        if not loadPath or not imagePath:
-            QMessageBox.warning(self, self.windowTitle(), "Please enter input and output directories")
-            return None, None
-
+    def generate(self, loadPath):
         kwargs = {
             "max_width": self.maxWidthSpinBox.value(),
             "max_height": self.maxHeightSpinBox.value(),
@@ -64,7 +54,13 @@ class PackerWindow(QDialog):
         self._color = int(hexcol, 16)
 
     def _cb_generatePreview(self):
-        img, _ = self.generate()
+        loadPath = self.inputEdit.text()
+
+        if not loadPath:
+            QMessageBox.warning(self, self.windowTitle(), "Please enter the input directory")
+            return
+
+        img, _ = self.generate(loadPath)
         if not img:
             return
         self.imageLabel.setPixmap(QPixmap.fromImage(img))
@@ -90,9 +86,14 @@ class PackerWindow(QDialog):
         self.outputEdit.setText(imagePath)
 
     def accept(self):
+        loadPath = self.inputEdit.text()
         imagePath = self.outputEdit.text()
 
-        img, sprites = self.generate()
+        if not loadPath or not imagePath:
+            QMessageBox.warning(self, self.windowTitle(), "Please enter input and output directories")
+            return
+
+        img, sprites = self.generate(loadPath)
         if not img or not sprites:
             QMessageBox.critical(self, self.windowTitle(), "Failed to generate spritesheet")
             return
