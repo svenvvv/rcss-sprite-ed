@@ -56,7 +56,7 @@ class SpritePacker:
         return images, errors
 
     def pathToId(self, path):
-        return path.replace("/", "-")
+        return path.replace(os.sep, "-")
 
     def pack(self, bg_color=0, **kwargs):
         packer = Packer.create(**kwargs)
