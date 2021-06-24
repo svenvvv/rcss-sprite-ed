@@ -447,6 +447,7 @@ class MainWindow(QMainWindow):
 
     def _cb_spritesListSelectItem(self, it):
         self.spritesList.model().setSelectedByName(it.data())
+        self.propertiesTable.setModel(self.spritesList.model().getPropertiesModel())
         self.repaint()
 
     def _cb_actionOpen(self):

@@ -2,6 +2,7 @@ from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 
+from Myth.Models.PropertiesModel import PropertiesModel
 
 class SpriteListModel(QAbstractListModel):
     _selected = None
@@ -72,3 +73,7 @@ class SpriteListModel(QAbstractListModel):
 
     def sheet(self):
         return self._sheet
+
+    def getPropertiesModel(self):
+        if self._selected:
+            return PropertiesModel(obj=self._selected)

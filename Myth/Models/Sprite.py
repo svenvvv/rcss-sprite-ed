@@ -1,14 +1,30 @@
 from PySide2.QtCore import QRect
 
+
+class Property:
+    def __init__(self, name, getter, setter, type):
+        self.name = name
+        self.getter = getter
+        self.setter = setter
+        self.type = type
+
+
 class Sprite(QRect):
-    flippedW = False
-    flippedH = False
+    _flippedW = False
+    _flippedH = False
 
     def __init__(self, name, x, y, w, h):
         super().__init__()
 
         self._name = name
         self.setSize(x, y, w, h)
+
+        self._properties = [
+            Property("x", self.x, self.setX, int),
+            Property("y", self.y, self.setY, int),
+            Property("width", self.width, self.setWidth, int),
+            Property("height", self.height, self.setHeight, int)
+        ]
 
     def name(self):
         return self._name
@@ -17,16 +33,16 @@ class Sprite(QRect):
         self._name = name
 
     def isFlippedX(self):
-        return self.flippedW
+        return self._flippedW
 
     def isFlippedY(self):
-        return self.flippedH
+        return self._flippedH
 
     def flipX(self):
-        self.flippedW = not self.flippedW
+        self._flippedW = not self._flippedW
 
     def flipY(self):
-        self.flippedH = not self.flippedH
+        self._flippedH = not self._flippedH
 
     def setSize(self, x, y, w, h):
         # If the sprite would have negative w/h then
@@ -34,11 +50,11 @@ class Sprite(QRect):
         if w < 0:
             x += w
             w = abs(w)
-            self.flippedW = True
+            self._flippedW = True
         if h < 0:
             y += h
             h = abs(h)
-            self.flippedH = True
+            self._flippedH = True
         self.setX(x)
         self.setY(y)
         self.setWidth(w)
@@ -64,10 +80,10 @@ class Sprite(QRect):
 
         # NOTE: if we shifted the image during image loading then shift it back, as
         # otherwise mirrored images will be wrong in RmlUI.
-        if self.flippedW:
+        if self._flippedW:
             w = -w
             x -= w
-        if self.flippedH:
+        if self._flippedH:
             h = -h
             y -= h
 
