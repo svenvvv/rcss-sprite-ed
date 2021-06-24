@@ -37,9 +37,12 @@ class PropertiesModel(QAbstractTableModel):
     def flags(self, index):
         ret = Qt.ItemIsSelectable | Qt.ItemIsEnabled
         if index.column() == 1:
-            ret |= Qt.ItemIsEditable
+            prop = self._obj._properties[index.row()]
 
-            if self._obj._properties[index.row()].type == bool:
+            if prop.setter:
+                ret |= Qt.ItemIsEditable
+
+            if prop.type == bool:
                 ret |= Qt.ItemIsUserCheckable
 
             return ret

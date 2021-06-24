@@ -1,3 +1,5 @@
+from Myth.Models.Property import Property
+
 
 class SpritesheetError(ValueError):
     def __init__(self, message):
@@ -12,6 +14,12 @@ class Spritesheet:
 
         self._src = src
         self._resolution = resolution
+
+        self._properties = [
+            Property("Name", self.name, self.setName, str),
+            Property("Source image", self.source, self.setSource, str),
+            Property("Resolution", self.resolution, self.setResolution, float),
+        ]
 
     def setBasepath(self, path):
         self._basepath = path

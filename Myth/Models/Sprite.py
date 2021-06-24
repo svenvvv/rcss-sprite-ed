@@ -1,13 +1,6 @@
 from PySide2.QtCore import QRect
 
-
-class Property:
-    def __init__(self, name, getter, setter, type):
-        self.name = name
-        self.getter = getter
-        self.setter = setter
-        self.type = type
-
+from Myth.Models.Property import Property
 
 class Sprite(QRect):
     _flippedW = False
@@ -20,6 +13,7 @@ class Sprite(QRect):
         self.setSize(x, y, w, h)
 
         self._properties = [
+            Property("Name", self.name, self.setName, str),
             Property("X", self.x, self.setX, int),
             Property("Y", self.y, self.setY, int),
             Property("Width", self.width, self.setWidth, int),

@@ -77,3 +77,4 @@ class SpriteListModel(QAbstractListModel):
     def getPropertiesModel(self):
         if self._selected:
             return PropertiesModel(obj=self._selected)
+        return PropertiesModel(obj=self._sheet)
