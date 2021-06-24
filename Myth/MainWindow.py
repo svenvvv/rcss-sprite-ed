@@ -68,9 +68,10 @@ class MainWindow(QMainWindow):
             settings.setValue("recentFilesList", [])
             self.menuRecentFiles.setEnabled(False)
 
-        for f in files:
+        for i, f in enumerate(files):
             name = os.path.basename(f)
             rfAct = QAction(name, self, triggered=functools.partial(self.loadStylesheet, f));
+            rfAct.setShortcut(QKeySequence(f"Ctrl+Shift+{i+1}"))
             self.menuRecentFiles.addAction(rfAct)
 
         self.menuRecentFiles.addSeparator()
