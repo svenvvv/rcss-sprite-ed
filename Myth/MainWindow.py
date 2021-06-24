@@ -476,6 +476,7 @@ class MainWindow(QMainWindow):
         if d.exec() == QDialog.Accepted:
             mod = self.spritesheetsList.model()
             if isinstance(mod, SpritesheetListModel):
+                d.generatedSheet.setName(f"generated-{mod.rowCount()+1}")
                 mod.insertRow(d.generatedSheet)
             else:
                 self.loadParsedStylesheets([ d.generatedSheet ])

@@ -37,6 +37,9 @@ class Spritesheet:
     def name(self):
         return self._name
 
+    def setName(self, name):
+        self._name = name
+
     def sprites(self):
         return self._sprites
 
