@@ -24,6 +24,7 @@ from Myth.Models.Spritesheet import *
 
 from MythPack.SpritePacker import SpritePacker
 
+
 class MainWindow(QMainWindow):
     # NOTE: redrawingSprite is still contained in MainWindow because I think it'll be rather
     # confusing to the user if we'd remember it per-sheet. Just clear it when changing.
@@ -108,6 +109,11 @@ class MainWindow(QMainWindow):
         self.actionZoomIn.triggered.connect(self._cb_actionZoomIn)
         self.actionZoomOut.triggered.connect(self._cb_actionZoomOut)
         self.actionZoomReset.triggered.connect(self._cb_actionZoomReset)
+
+        self.actionDrawSpriteOutlines.triggered.connect(self.repaint)
+        self.actionDrawSpriteNames.triggered.connect(self.repaint)
+        self.actionDrawSpriteDiagonals.triggered.connect(self.repaint)
+        self.actionDrawSpriteFlipIndicators.triggered.connect(self.repaint)
 
         self.actionDrawSpritesDuringSketching.triggered.connect(self._cb_actionDrawSpritesDuringSketching)
         self.actionFlipImageX.triggered.connect(self._cb_actionReload)
