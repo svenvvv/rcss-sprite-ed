@@ -20,10 +20,12 @@ class Sprite(QRect):
         self.setSize(x, y, w, h)
 
         self._properties = [
-            Property("x", self.x, self.setX, int),
-            Property("y", self.y, self.setY, int),
-            Property("width", self.width, self.setWidth, int),
-            Property("height", self.height, self.setHeight, int)
+            Property("X", self.x, self.setX, int),
+            Property("Y", self.y, self.setY, int),
+            Property("Width", self.width, self.setWidth, int),
+            Property("Height", self.height, self.setHeight, int),
+            Property("X-flipped", self.isFlippedX, lambda v: self.flipX(), bool),
+            Property("Y-flipped", self.isFlippedY, lambda v: self.flipY(), bool),
         ]
 
     def name(self):
