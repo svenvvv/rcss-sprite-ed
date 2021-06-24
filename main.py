@@ -10,5 +10,8 @@ if __name__ == '__main__':
     import sys
 
     app = QApplication(sys.argv)
+    app.setOrganizationName("svsoft")
+    app.setApplicationName("rcssspriteed")
+
     editor = MainWindow()
     sys.exit(app.exec_())

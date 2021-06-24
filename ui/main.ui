@@ -71,6 +71,18 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <widget class="QMenu" name="menuRecentFiles">
+     <property name="statusTip">
+      <string>Re-open recently opened files.</string>
+     </property>
+     <property name="title">
+      <string>&amp;Recent files</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open-recent"/>
+     </property>
+     <addaction name="separator"/>
+    </widget>
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
     <addaction name="actionSaveAs"/>
@@ -78,6 +90,7 @@
     <addaction name="separator"/>
     <addaction name="actionPackImages"/>
     <addaction name="separator"/>
+    <addaction name="menuRecentFiles"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -401,7 +414,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>&amp;Reload image</string>
+    <string>Reload &amp;image</string>
    </property>
    <property name="statusTip">
     <string>Reload the RCSS source image.</string>

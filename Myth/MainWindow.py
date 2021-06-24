@@ -1,6 +1,7 @@
 import PIL
 import os
 import Myth.Util
+import functools
 
 from PySide2.QtGui import *
 from PySide2.QtCore import *
@@ -31,6 +32,7 @@ class MainWindow(QMainWindow):
     scale = 1.0
     undoStacks = {}
     curUndoStack = None
+    recentFilesCount = 5
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -39,8 +41,42 @@ class MainWindow(QMainWindow):
         self._setupImageSelect()
         self._setupActions()
         self._setupMenus()
+        self._setupRecentFiles()
 
         self.show()
+
+    def _setupRecentFiles(self):
+        settings = QSettings()
+        files = settings.value("recentFilesList")
+
+        if not files:
+            self.menuRecentFiles.setEnabled(False)
+            return
+
+        if isinstance(files, str):
+            # if there's a single value then we get it as a string, so to simplify code in other
+            # places then just stuff the same value back as a list, so other places can depend
+            # on it being a list.
+            files = [ files ]
+            settings.setValue("recentFilesList", files)
+
+        self.menuRecentFiles.setEnabled(True)
+        self.menuRecentFiles.clear()
+
+        def cb_recentClear():
+            settings.setValue("recentFilesList", [])
+            self.menuRecentFiles.setEnabled(False)
+
+        for f in files:
+            name = os.path.basename(f)
+            rfAct = QAction(name, self, triggered=functools.partial(self.loadStylesheet, f));
+            self.menuRecentFiles.addAction(rfAct)
+
+        self.menuRecentFiles.addSeparator()
+        clearAct = QAction("Clear recent files", self,
+                           triggered=cb_recentClear,
+                           icon=QIcon.fromTheme("edit-clear"));
+        self.menuRecentFiles.addAction(clearAct)
 
     def _setupImageSelect(self):
         self.imageSelect = ImageSelect()
@@ -415,6 +451,16 @@ class MainWindow(QMainWindow):
                                                  QDir.currentPath(), fmts)
         if filename:
             self.loadStylesheet(filename)
+
+            settings = QSettings()
+            files = settings.value("recentFilesList", defaultValue=[])
+            newfiles = [ filename ]
+
+            if files:
+                newfiles += files[:self.recentFilesCount-1]
+
+            settings.setValue("recentFilesList", newfiles)
+            self._setupRecentFiles()
 
     def _cb_actionSave(self):
         ss = self.saveStylesheet()
