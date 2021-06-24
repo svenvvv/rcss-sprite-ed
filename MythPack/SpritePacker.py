@@ -59,18 +59,26 @@ class SpritePacker:
         return path.replace(os.sep, "-")
 
     def pack(self, bg_color=0, **kwargs):
-        packer = Packer.create(**kwargs)
-        # TODO: why is this an array??
-        atlas = packer._pack(self._images)[0]
-        packed = atlas.dump_image(bg_color)
+        try:
+            packer = Packer.create(**kwargs)
+            # TODO: why is this an array??
+            atlas = packer._pack(self._images)[0]
+            packed = atlas.dump_image(bg_color)
+            rmlSprites = []
+            error = None
 
-        rmlSprites = []
-        for r in atlas.image_rect_list:
-            # Slice off root folder and path separator
-            p = r.image_path[len(self._path)+1:]
-            p = os.path.splitext(p)[0]
-            id = self.pathToId(p)
-            print(f"Packed sprite {id} ({r.x}, {r.y}, {r.width}, {r.height})")
-            rmlSprites.append(Sprite(id, r.x, r.y, r.width, r.height))
+            for r in atlas.image_rect_list:
+                # Slice off root folder and path separator
+                p = r.image_path[len(self._path)+1:]
+                p = os.path.splitext(p)[0]
+                id = self.pathToId(p)
+                print(f"Packed sprite {id} ({r.x}, {r.y}, {r.width}, {r.height})")
+                rmlSprites.append(Sprite(id, r.x, r.y, r.width, r.height))
 
-        return ImageQt(packed), rmlSprites
+            if len(rmlSprites) != len(self._images):
+                error = "Could not fit all sprites into the specified dimensions!"
+
+            return ImageQt(packed), rmlSprites, error
+        except ValueError as e:
+            print(e)
+            return None, None, str(e)

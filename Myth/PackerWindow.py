@@ -60,9 +60,19 @@ class PackerWindow(QDialog):
             QMessageBox.warning(self, self.windowTitle(), "Please enter the input directory")
             return
 
-        img, _ = self.generate(loadPath)
+        img, sprites, error = self.generate(loadPath)
         if not img:
+            self.infoLabel.setStyleSheet("color: rgb(255, 0, 4);")
+            self.infoLabel.setText(error)
             return
+
+        if error:
+            self.infoLabel.setStyleSheet("color: rgb(255, 0, 4);")
+            self.infoLabel.setText(error)
+        else:
+            self.infoLabel.setStyleSheet("color: rgb(0, 255, 4);")
+            self.infoLabel.setText(f"Successfully generated sheet {img.width()}x{img.height()} with {len(sprites)} sprites")
+
         self.imageLabel.setPixmap(QPixmap.fromImage(img))
 
     def _cb_inputBrowse(self):
@@ -93,9 +103,10 @@ class PackerWindow(QDialog):
             QMessageBox.warning(self, self.windowTitle(), "Please enter input and output directories")
             return
 
-        img, sprites = self.generate(loadPath)
-        if not img or not sprites:
-            QMessageBox.critical(self, self.windowTitle(), "Failed to generate spritesheet")
+        img, sprites, error = self.generate(loadPath)
+        if not img or not sprites or error:
+            errmsg = error if error else "Failed to generate spritesheet"
+            QMessageBox.critical(self, self.windowTitle(), errmsg)
             return
 
         img.save(imagePath, self._outFmt)

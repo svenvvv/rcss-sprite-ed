@@ -14,8 +14,18 @@
    <string>Sprite Packer</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_5">
-   <item row="0" column="0">
-    <widget class="QGroupBox" name="groupBox">
+   <item row="4" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="previewGroupBox">
      <property name="title">
       <string>Preview</string>
      </property>
@@ -32,7 +42,7 @@
       <property name="bottomMargin">
        <number>2</number>
       </property>
-      <item row="0" column="0">
+      <item row="1" column="0">
        <widget class="QScrollArea" name="scrollArea">
         <property name="sizePolicy">
          <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
@@ -49,11 +59,11 @@
            <x>0</x>
            <y>0</y>
            <width>424</width>
-           <height>307</height>
+           <height>282</height>
           </rect>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
-          <item row="0" column="0">
+          <item row="1" column="0">
            <widget class="QLabel" name="imageLabel">
             <property name="text">
              <string>Click &quot;Generate preview&quot; for the image preview</string>
@@ -70,128 +80,7 @@
      </layout>
     </widget>
    </item>
-   <item row="0" column="1">
-    <widget class="QGroupBox" name="groupBox_2">
-     <property name="title">
-      <string>Options</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0">
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="1">
-         <widget class="QSpinBox" name="maxWidthSpinBox">
-          <property name="maximum">
-           <number>999999</number>
-          </property>
-          <property name="value">
-           <number>1024</number>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0" colspan="2">
-         <widget class="QCheckBox" name="squareOutputCheckBox">
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="text">
-           <string>Force square output</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1">
-         <widget class="QSpinBox" name="shapePaddingSpinBox"/>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Border padding</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Max width</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>Inner padding</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QPushButton" name="bgColorButton">
-          <property name="text">
-           <string>Select</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QSpinBox" name="maxHeightSpinBox">
-          <property name="maximum">
-           <number>999999</number>
-          </property>
-          <property name="value">
-           <number>1024</number>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="0" colspan="2">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Max height</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Background color</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="0" colspan="2">
-         <widget class="QPushButton" name="previewButton">
-          <property name="text">
-           <string>Generate &amp;preview</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="1">
-         <widget class="QSpinBox" name="innerPaddingSpinBox"/>
-        </item>
-        <item row="4" column="0">
-         <widget class="QLabel" name="label_7">
-          <property name="text">
-           <string>Shape padding</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QSpinBox" name="borderPaddingSpinBox"/>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="1" column="0" colspan="2">
+   <item row="3" column="0" colspan="2">
     <layout class="QGridLayout" name="gridLayout">
      <item row="0" column="0">
       <widget class="QLabel" name="label_9">
@@ -229,13 +118,134 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+   <item row="1" column="1">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>Options</string>
      </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="0" column="0">
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="7" column="0" colspan="2">
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Border padding</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Background color</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QSpinBox" name="innerPaddingSpinBox"/>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="bgColorButton">
+          <property name="text">
+           <string>Select</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QSpinBox" name="borderPaddingSpinBox"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Max width</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="maxHeightSpinBox">
+          <property name="maximum">
+           <number>999999</number>
+          </property>
+          <property name="value">
+           <number>1024</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="maxWidthSpinBox">
+          <property name="maximum">
+           <number>999999</number>
+          </property>
+          <property name="value">
+           <number>1024</number>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0" colspan="2">
+         <widget class="QCheckBox" name="squareOutputCheckBox">
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Force square output</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QSpinBox" name="shapePaddingSpinBox"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Max height</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Shape padding</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Inner padding</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="0" colspan="2">
+         <widget class="QPushButton" name="previewButton">
+          <property name="text">
+           <string>Generate &amp;preview</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="QLabel" name="infoLabel">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="text">
+      <string/>
      </property>
     </widget>
    </item>
