@@ -317,13 +317,10 @@ class MainWindow(QMainWindow):
 
     def loadImage(self, filename):
         try:
-            image = PIL.Image.open(filename)
-            qimg = PIL.ImageQt.ImageQt(image)
+            reader = QImageReader(filename)
+            qimg = reader.read()
             self.setImage(qimg)
             self.statusBar().showMessage(f"Successfully loaded image {filename}")
-
-            image.close()
-
             return True
         except Exception as e:
             QMessageBox.warning(self, self.windowTitle, f"Failed to load {filename}: {e}.")
