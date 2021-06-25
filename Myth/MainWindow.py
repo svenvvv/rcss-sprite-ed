@@ -433,7 +433,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Image reload failed!")
 
     def _cb_actionReplaceImage(self):
-        fmts = Myth.Util.supportedImageFormatsQtAllInOne()
+        fmts = Myth.Util.supportedImageReadFormats(True)
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath(), fmts)
         if filename:
             self.createCommand(self.curUndoStack, CommandSetImage, self, filename)

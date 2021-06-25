@@ -81,13 +81,13 @@ class PackerWindow(QDialog):
         self.inputEdit.setText(loadPath)
 
     def _cb_outputBrowse(self):
-        imgFmts = Myth.Util.supportedImageFormatsQt()
+        imgFmts = Myth.Util.supportedImageWriteFormats()
         imagePath, fmt = QFileDialog.getSaveFileName(self, "Select output image file",
                                                      QDir.currentPath(), imgFmts)
         if not imagePath or not fmt:
             return
 
-        self._outFmt = Myth.Util.supportedImageFormatFromQt(fmt)
+        self._outFmt = Myth.Util.supportedImageFormatToExt(fmt)
 
         if self._outFmt and not imagePath.lower().endswith(self._outFmt.lower()):
             imagePath += "." + self._outFmt.lower()
@@ -106,6 +106,12 @@ class PackerWindow(QDialog):
             errmsg = error if error else "Failed to generate spritesheet"
             QMessageBox.critical(self, self.windowTitle(), errmsg)
             return
+
+        if not self._outFmt:
+            _,ext = os.path.splitext(imagePath)
+            if len(ext) == 0:
+                self._outFmt = "PNG"
+                imagePath += ".png"
 
         img.save(imagePath, self._outFmt)
 
