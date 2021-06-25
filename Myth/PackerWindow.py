@@ -45,7 +45,8 @@ class PackerWindow(QDialog):
             QMessageBox.critical(self, self.windowTitle(), str(e))
 
     def _cb_selectColor(self):
-        color = QColorDialog.getColor(parent=self, title="Choose background color", options=QColorDialog.ShowAlphaChannel)
+        color = QColorDialog.getColor(parent=self, title="Choose background color",
+                                      options=QColorDialog.ShowAlphaChannel)
         if not color:
             return
         hexcol = color.name()[1:] + hex(color.alpha())[2:].zfill(2)
@@ -98,7 +99,8 @@ class PackerWindow(QDialog):
         imagePath = self.outputEdit.text()
 
         if not loadPath or not imagePath:
-            QMessageBox.warning(self, self.windowTitle(), "Please enter input and output directories")
+            QMessageBox.warning(self, self.windowTitle(),
+                                "Please enter input and output directories")
             return
 
         img, sprites, error = self.generate(loadPath)
@@ -113,7 +115,13 @@ class PackerWindow(QDialog):
                 self._outFmt = "PNG"
                 imagePath += ".png"
 
-        img.save(imagePath, self._outFmt)
+
+        writer = QImageWriter(imagePath, self._outFmt)
+
+        if not writer.write(img):
+            QMessageBox.critical(self, self.windowTitle(),
+                                 f"Error writing image: {writer.error()}")
+            return
 
         file = os.path.basename(imagePath)
         base = os.path.dirname(imagePath)
