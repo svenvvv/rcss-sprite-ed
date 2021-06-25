@@ -28,6 +28,14 @@ class Sprite(QRect):
     def setName(self, name):
         self._name = name
 
+    def setX(self, x):
+        self.setWidth(self.width() - self.x() + x)
+        super().setX(x)
+
+    def setY(self, y):
+        self.setHeight(self.height() - self.y() + y)
+        super().setY(y)
+
     def isFlippedX(self):
         return self._flippedW
 
