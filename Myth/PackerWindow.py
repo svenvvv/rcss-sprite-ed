@@ -1,4 +1,3 @@
-import PIL
 import functools
 import os
 import Myth.Util
@@ -41,16 +40,15 @@ class PackerWindow(QDialog):
 
         try:
             packer = SpritePacker(loadPath, True)
+            return packer.pack(**kwargs)
         except PackerException as e:
             QMessageBox.critical(self, self.windowTitle(), str(e))
-
-        return packer.pack(**kwargs)
 
     def _cb_selectColor(self):
         color = QColorDialog.getColor(parent=self, title="Choose background color", options=QColorDialog.ShowAlphaChannel)
         if not color:
             return
-        hexcol = color.name()[1:] + hex(color.alpha())[2:]
+        hexcol = color.name()[1:] + hex(color.alpha())[2:].zfill(2)
         self._color = int(hexcol, 16)
 
     def _cb_generatePreview(self):

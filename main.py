@@ -6,6 +6,7 @@ from PySide2.QtWidgets import *
 
 from Myth.MainWindow import MainWindow
 
+
 if __name__ == '__main__':
     import sys
 
