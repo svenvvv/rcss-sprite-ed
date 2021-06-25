@@ -1,4 +1,5 @@
 import os
+import Myth.Util
 
 from PySide2.QtGui import *
 from PySide2.QtCore import *
@@ -12,6 +13,31 @@ class CommandError(ValueError):
 class CommandIgnored(ValueError):
     def __init__(self, message):
         super().__init__(message)
+
+
+class CommandSetProperty(QUndoCommand):
+    def __init__(self, setter, new, prev, propName=""):
+        super().__init__()
+
+        self.new = new
+        self.prev = prev
+        self.setter = setter
+        self.win = Myth.Util.getMainWindow()
+
+        self.propName = propName
+
+        if self.new == self.prev:
+            raise CommandIgnored("Old and new property are the same, ignoring")
+
+    def redo(self):
+        self.setter(self.new)
+        self.win.statusBar().showMessage(f"Set property {self.propName} from {self.prev} to {self.new}")
+        self.win.repaint()
+
+    def undo(self):
+        self.setter(self.prev)
+        self.win.statusBar().showMessage(f"Set property {self.propName} from {self.prev} to {self.new}")
+        self.win.repaint()
 
 
 class CommandSetResolution(QUndoCommand):

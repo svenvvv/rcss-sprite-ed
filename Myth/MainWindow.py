@@ -130,15 +130,15 @@ class MainWindow(QMainWindow):
             s = self.spritesList.model().selected()
             d = SpriteEditModal(s, self)
             if d.exec() == QDialog.Accepted:
-                self.createCommand(self.curUndoStack, CommandModifySprite, self, s, **d.newValues)
+                self.createCommand(CommandModifySprite, self, s, **d.newValues)
 
         def cb_flipX():
             s = self.spritesList.model().selected()
-            self.createCommand(self.curUndoStack, CommandFlipSprite, self, s, "x")
+            self.createCommand(CommandFlipSprite, self, s, "x")
 
         def cb_flipY():
             s = self.spritesList.model().selected()
-            self.createCommand(self.curUndoStack, CommandFlipSprite, self, s, "y")
+            self.createCommand(CommandFlipSprite, self, s, "y")
 
         def cb_redraw():
             s = self.spritesList.model().selected()
@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
 
         def cb_delete():
             s = self.spritesList.model().selected()
-            self.createCommand(self.curUndoStack, CommandDeleteSprite, self, s)
+            self.createCommand(CommandDeleteSprite, self, s)
 
         editAction = QAction("Edit", self, triggered=cb_edit)
         editAction.setIcon(QIcon.fromTheme("document-properties"))
@@ -350,10 +350,10 @@ class MainWindow(QMainWindow):
         self.actionZoomIn.setEnabled(self.scale < 3.0)
         self.actionZoomOut.setEnabled(self.scale > 0.333)
 
-    def createCommand(self, stack, type, *args, **kwargs):
+    def createCommand(self, type, *args, **kwargs):
         try:
             cmd = type(*args, **kwargs)
-            stack.push(cmd)
+            self.curUndoStack.push(cmd)
             return True
         except CommandError as e:
             QMessageBox.warning(self, self.windowTitle, str(e))
@@ -412,7 +412,7 @@ class MainWindow(QMainWindow):
     def _cb_spriteFinished(self, r):
         if self.redrawingSprite:
             name = self.redrawingSprite.name()
-            if self.createCommand(self.curUndoStack, CommandModifySprite,
+            if self.createCommand(CommandModifySprite,
                                   self, self.redrawingSprite,
                                   r.x(), r.y(), r.width(), r.height()):
                 self.statusBar().showMessage(f"Finished redrawing sprite {self.redrawingSprite.name()}")
@@ -425,7 +425,7 @@ class MainWindow(QMainWindow):
                 return
 
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
-            self.createCommand(self.curUndoStack, CommandCreateSprite, self, spr)
+            self.createCommand(CommandCreateSprite, self, spr)
 
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
@@ -436,14 +436,14 @@ class MainWindow(QMainWindow):
         fmts = Myth.Util.supportedImageFormatsQtAllInOne()
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath(), fmts)
         if filename:
-            self.createCommand(self.curUndoStack, CommandSetImage, self, filename)
+            self.createCommand(CommandSetImage, self, filename)
 
     def _cb_actionSetResolution(self):
         sheet = self.spritesList.model().sheet()
         res, ok = QInputDialog().getDouble(self, "Set resolution", "New resolution:",
                                            sheet.resolution(), minValue=0)
         if res and ok:
-            self.createCommand(self.curUndoStack, CommandSetResolution, self, res)
+            self.createCommand(CommandSetResolution, self, res)
 
     def _cb_spritesListSelectItem(self, it):
         self.spritesList.model().setSelectedByName(it.data())

@@ -1,5 +1,10 @@
 import functools
 
+from PySide2.QtGui import *
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
+
+
 # TODO: there IS a nice way to get this from PIL, but I couldn't get it to work
 # (see PIL.features.pilinfo()), so it's all manual work for now..
 imgFmts = [
@@ -31,3 +36,9 @@ def supportedImageFormatFromQt(fmt):
         return imgFmtEntry[0][1]
     else:
         return None
+
+def getMainWindow():
+    for w in QApplication.instance().topLevelWidgets():
+        if isinstance(w, QMainWindow):
+            return w
+    return None

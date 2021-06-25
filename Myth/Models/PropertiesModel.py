@@ -1,11 +1,17 @@
+import Myth.Util
+
 from PySide2.QtGui import *
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
+
+from Myth.Commands import CommandSetProperty
+
 
 class PropertiesModel(QAbstractTableModel):
     def __init__(self, *args, obj, **kwargs):
         super(PropertiesModel, self).__init__(*args, **kwargs)
         self._obj = obj
+        self._win = Myth.Util.getMainWindow()
 
     def data(self, index, role):
         prop = self._obj._properties[index.row()]
@@ -29,9 +35,13 @@ class PropertiesModel(QAbstractTableModel):
         if index.column() != 1:
             return False
 
+        if isinstance(value, str) and len(value) == 0:
+            return False
+
         prop = self._obj._properties[index.row()]
         v = prop.type(value)
-        prop.setter(v)
+        self._win.createCommand(CommandSetProperty, prop.setter, v, prop.getter(), prop.name)
+
         return True
 
     def flags(self, index):
