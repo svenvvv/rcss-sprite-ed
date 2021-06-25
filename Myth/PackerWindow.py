@@ -115,7 +115,7 @@ class PackerWindow(QDialog):
             QMessageBox.critical(self, self.windowTitle(), errmsg)
             return
 
-        writer = QImageWriter(imagePath, self._outFmt)
+        writer = QImageWriter(imagePath, bytes(self._outFmt, "utf8"))
         if not writer.write(img):
             QMessageBox.critical(self, self.windowTitle(),
                                  f"Error writing image: {writer.error()}")
