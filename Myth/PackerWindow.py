@@ -90,7 +90,13 @@ class PackerWindow(QDialog):
 
         self._outFmt = Myth.Util.supportedImageFormatToExt(fmt)
 
-        if self._outFmt and not imagePath.lower().endswith(self._outFmt.lower()):
+        if not self._outFmt:
+            _,ext = os.path.splitext(imagePath)
+            if len(ext) == 0:
+                self._outFmt = "PNG"
+                imagePath += ".png"
+
+        if not imagePath.lower().endswith(self._outFmt.lower()):
             imagePath += "." + self._outFmt.lower()
         self.outputEdit.setText(imagePath)
 
@@ -109,15 +115,7 @@ class PackerWindow(QDialog):
             QMessageBox.critical(self, self.windowTitle(), errmsg)
             return
 
-        if not self._outFmt:
-            _,ext = os.path.splitext(imagePath)
-            if len(ext) == 0:
-                self._outFmt = "PNG"
-                imagePath += ".png"
-
-
         writer = QImageWriter(imagePath, self._outFmt)
-
         if not writer.write(img):
             QMessageBox.critical(self, self.windowTitle(),
                                  f"Error writing image: {writer.error()}")
