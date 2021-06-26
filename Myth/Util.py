@@ -1,6 +1,8 @@
 import functools
 from PySide2.QtGui import QImageReader, QImageWriter
 
+VERSION = "1.0"
+
 def supportedImageFormats(fmts, aggregate):
     ret = None
     print(fmts)
