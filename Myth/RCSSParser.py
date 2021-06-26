@@ -1,4 +1,5 @@
 import tinycss
+from tinycss.parsing import ParseError
 from functools import reduce
 
 from Myth.Models.Sprite import Sprite
@@ -7,13 +8,14 @@ from Myth.Models.Sprite import Sprite
 class SpritesheetRule(object):
     at_keyword = '@spritesheet'
 
-    def __init__(self, name, declarations, props, at_rules, line, column):
+    def __init__(self, name, declarations, props, at_rules, line, column, endline):
         self.name = name
         self.props = props
         self.declarations = declarations
         self.at_rules = at_rules
         self.line = line
         self.column = column
+        self.endline = endline
 
     def __repr__(self):
         return ('<{0.__class__.__name__} {0.line}:{0.column}'
@@ -91,16 +93,26 @@ class RCSSParser(tinycss.CSS21Parser):
 
     def parse_at_rule(self, rule, previous_rules, errors, context):
         if rule.at_keyword == '@spritesheet':
-            if context != 'stylesheet':
-                raise ParseError(rule, '@spritesheet rule not allowed in ' + context)
             name = self.parse_spritesheet_name(rule.head)
+
             if rule.body is None:
                 raise ParseError(rule, 'invalid {0} rule: missing block'.format(rule.at_keyword))
+
             declarations, at_rules, rule_errors = self.parse_declarations_and_at_rules(rule.body, '@spritesheet')
             errors.extend(rule_errors)
+
             ss_decls, props, decl_errors = self.parse_spritesheet_declarations(declarations)
             errors.extend(decl_errors)
-            return SpritesheetRule(name, ss_decls, props, at_rules, rule.line, rule.column)
+
+            endline = None
+
+            lasttok = rule.body[-1]
+            if lasttok.value == "\n":
+                endline = lasttok.line + 1
+            else:
+                endline = lasttok.line
+
+            return SpritesheetRule(name, ss_decls, props, at_rules, rule.line, rule.column, endline)
         else:
             return super().parse_at_rule(rule, previous_rules, errors, context)
 

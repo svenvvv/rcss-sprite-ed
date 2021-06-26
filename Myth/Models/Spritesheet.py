@@ -5,19 +5,26 @@ class SpritesheetError(ValueError):
 
 
 class Spritesheet:
-    def __init__(self, basepath, name, sprites, src="none", resolution=None):
+    def __init__(self, basepath, linerange, name, sprites, src="none", resolution=None):
         self._name = name
         self._sprites = sprites
         self._basepath = basepath
+        self._linerange = linerange
 
         self._src = src
         self._resolution = resolution
 
+    def basepath(self):
+        return self._basepath
+
     def setBasepath(self, path):
         self._basepath = path
 
-    def basepath(self):
-        return self._basepath
+    def linerange(self):
+        return self._linerange
+
+    def setLinerange(self, range):
+        self._linerange = range
 
     def resolution(self):
         return self._resolution

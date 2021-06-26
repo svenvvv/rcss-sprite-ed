@@ -1,6 +1,7 @@
 import os
 import Myth.Util
 import functools
+import shutil
 
 from PySide2.QtGui import *
 from PySide2.QtCore import *
@@ -33,6 +34,8 @@ class MainWindow(QMainWindow):
     undoStacks = {}
     curUndoStack = None
     recentFilesCount = 5
+    # HACK: refactor document into own class
+    currentDocument = None
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -95,7 +98,7 @@ class MainWindow(QMainWindow):
 
         self.actionOpen.triggered.connect(self._cb_actionOpen)
         self.actionSave.triggered.connect(self._cb_actionSave)
-        self.actionSaveAs.triggered.connect(self._cb_actionSave)
+        self.actionSaveAs.triggered.connect(self._cb_actionSaveAs)
         self.actionReload.triggered.connect(self._cb_actionReload)
         self.actionPackImages.triggered.connect(self._cb_actionPackImages)
         self.actionQuit.triggered.connect(self.close)
@@ -238,11 +241,14 @@ class MainWindow(QMainWindow):
 
             return
 
+        # TODO: this should be refactored into a document class which we stuff all the sheets into
         parsedSheets = []
         basepath = os.path.dirname(filename)
         for ss in spritesheets:
             try:
-                s = Spritesheet(basepath, ss.name, ss.declarations,
+                # NOTE: Parser lines start from 1, ours from 0
+                linerange = (ss.line-1, ss.endline-1)
+                s = Spritesheet(basepath, linerange, ss.name, ss.declarations,
                                 ss.props["src"], ss.props.get("resolution"))
                 s.setBasepath(basepath)
                 parsedSheets.append(s)
@@ -250,6 +256,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, self.windowTitle, f"Error parsing \"{ss.name}\": {e}")
                 return
 
+        self.currentDocument = filename
         self.updateTitle(os.path.basename(filename))
         self.loadParsedStylesheets(parsedSheets, True)
 
@@ -270,7 +277,56 @@ class MainWindow(QMainWindow):
         self.spritesheetsList.selectionModel().currentChanged.connect(lambda cur,prev: self.selectSpritesheet(cur.data()))
         self.statusBar().showMessage(f"Successfully loaded {len(sheets)} spritesheets")
 
-    def saveStylesheet(self):
+    def saveStylesheets(self, outputFilename=None):
+
+        warnmsg = """
+Make sure that your stylesheet files are checked into version control so you can revert if something goes wrong.
+This tool is still under development.
+
+Do you wish to continue?
+"""
+        warn = QMessageBox.question(self, self.windowTitle, warnmsg)
+        if warn != QMessageBox.StandardButton.Yes:
+            return
+
+        if outputFilename is None:
+            outputFilename = self.currentDocument
+
+        # If we're overwriting then create a backup to read from
+        backupFilename = None
+        if outputFilename == self.currentDocument:
+            backupFilename = self.currentDocument + ".bak"
+            shutil.copyfile(self.currentDocument, backupFilename)
+        else:
+            backupFilename = self.currentDocument
+
+        sheetData = self.serializeStylesheets()
+        sheetDataLines = sheetData.count("\n") - 1
+
+        ranges = []
+        for sheet in self.spritesheetsList.model().sheets():
+            ranges.append(sheet.linerange())
+
+        dumpRange = None
+        with open(outputFilename, "w") as fd, open(backupFilename, "r") as fs:
+            for i,l in enumerate(fs):
+                inrange = list(filter(lambda range: range[0] <= i and range[1] >= i, ranges))
+
+                if len(inrange) > 0:
+                    if not dumpRange:
+                        fd.write(sheetData)
+                        dumpRange = (i, i+sheetDataLines)
+                    continue
+
+                fd.write(l)
+
+        # Rewrite all ranges, since we dumped them all in the same range
+        for sheet in self.spritesheetsList.model().sheets():
+            sheet.setLinerange(dumpRange)
+
+        self.statusBar().showMessage(f"Successfully saved stylesheet {outputFilename}")
+
+    def serializeStylesheets(self):
         ret = ""
         for ss in self.spritesheetsList.model().sheets():
             ret += ss.serialize()
@@ -475,9 +531,16 @@ class MainWindow(QMainWindow):
             self._setupRecentFiles()
 
     def _cb_actionSave(self):
-        ss = self.saveStylesheet()
-        res, ok = QInputDialog().getMultiLineText(self, "Output",
-                                                  "Saving into RCSS file isn't implemented yet.", ss)
+        self.saveStylesheets()
+
+    def _cb_actionSaveAs(self):
+        fmts = "RCSS documents (*.rcss);;All files (*.*)"
+        filePath, fmt = QFileDialog.getSaveFileName(self, "Select output file",
+                                                     QDir.currentPath(), fmts)
+        if not filePath or not fmt:
+            return
+
+        self.saveStylesheets(filePath)
 
     def _cb_actionPackImages(self):
         d = PackerWindow()
