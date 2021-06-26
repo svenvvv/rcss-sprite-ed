@@ -221,13 +221,21 @@ class MainWindow(QMainWindow):
 
         if parser.hadSpritesheetError:
             print("CSS errors:", css.errors)
-            QMessageBox.critical(self, self.windowTitle, f"Error loading file {filename}: {css.errors}")
+            QMessageBox.critical(self, self.windowTitle,
+                                 f"Error loading file {filename}: {css.errors}")
             return
 
         spritesheets = list(filter(lambda r: r.at_keyword == "@spritesheet", css.rules))
 
         if len(spritesheets) == 0:
-            QMessageBox.critical(self, self.windowTitle, f"Stylesheet does not contain any spritesheets!")
+            if css.errors:
+                errmsg = functools.reduce(lambda a,v: a + str(v) + "\n", css.errors, "")
+                QInputDialog().getMultiLineText(self, "Could not find any spritesheets",
+                                                "Parser errors encountered:", errmsg)
+            else:
+                QMessageBox.critical(self, self.windowTitle,
+                                     f"Stylesheet does not contain any spritesheets!")
+
             return
 
         parsedSheets = []
