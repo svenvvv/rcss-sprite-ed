@@ -1,7 +1,22 @@
 import functools
+import hashlib
+
 from PySide2.QtGui import QImageReader, QImageWriter
 
+
 VERSION = "1.0"
+
+
+def checksumFile(filename, chunkSize=32*1024):
+    sum = hashlib.sha1()
+    with open(filename, "rb") as fd:
+        while True:
+            d = fd.read(chunkSize)
+            if not d:
+                break
+
+            sum.update(d)
+    return sum.hexdigest()
 
 def supportedImageFormats(fmts, aggregate):
     ret = None

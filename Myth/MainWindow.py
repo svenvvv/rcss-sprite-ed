@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
     recentFilesCount = 5
     # HACK: refactor document into own class
     currentDocument = None
+    currentDocumentDigest = None
     hasUnsavedChanges = False
 
     def __init__(self, parent=None):
@@ -283,6 +284,7 @@ class MainWindow(QMainWindow):
                 return
 
         self.currentDocument = filename
+        self.currentDocumentDigest = Myth.Util.checksumFile(filename)
         self.setUnsavedChanges(False)
 
         self.updateTitle()
@@ -306,15 +308,24 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Successfully loaded {len(sheets)} spritesheets")
 
     def saveStylesheets(self, outputFilename=None):
-        warnmsg = """
-Make sure that your stylesheet files are checked into version control so you can revert if something goes wrong.
+        msg = """ Make sure that your stylesheet files are checked into
+version control so you can revert if something goes wrong.
 This tool is still under development.
-
 Do you wish to continue?
 """
-        warn = QMessageBox.question(self, self.windowTitle, warnmsg)
+        warn = QMessageBox.question(self, self.windowTitle, msg)
         if warn != QMessageBox.StandardButton.Yes:
             return
+
+        digest = Myth.Util.checksumFile(self.currentDocument)
+        if digest != self.currentDocumentDigest:
+            msg = """The file has been changed outside of this tool!
+This will most likely cause file corruption if the number of lines has changed.
+You really shouldn't continue..
+Do you wish to continue?"""
+            warn = QMessageBox.question(self, self.windowTitle, msg)
+            if warn != QMessageBox.StandardButton.Yes:
+                return
 
         if outputFilename is None:
             outputFilename = self.currentDocument
@@ -352,6 +363,7 @@ Do you wish to continue?
             sheet.setLinerange(dumpRange)
 
         self.setUnsavedChanges(False)
+        self.currentDocumentDigest = Myth.Util.checksumFile(outputFilename)
         self.statusBar().showMessage(f"Successfully saved stylesheet {outputFilename}")
 
     def serializeStylesheets(self):
@@ -575,6 +587,7 @@ Do you wish to continue?
             return
 
         self.saveStylesheets(filePath)
+        self.loadStylesheet(filePath)
 
     def _cb_actionPackImages(self):
         d = PackerWindow()
