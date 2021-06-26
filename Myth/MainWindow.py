@@ -213,7 +213,7 @@ class MainWindow(QMainWindow):
     def deleteAllSprites(self):
         self.redrawingSprite = None
 
-    def selectSpritesheet(self, name, loadImage=True):
+    def selectSpritesheet(self, name, loadImage=True, imagePath=""):
         self.redrawingSprite = None
 
         ssmod = self.spritesheetsList.model()
@@ -238,7 +238,7 @@ class MainWindow(QMainWindow):
 
         if loadImage:
             imgName = ssmod.getSheetImage(name)
-            self.loadImage(imgName)
+            self.loadImage(imagePath + imgName)
             self._cb_actionZoomReset()
 
         self.statusBar().showMessage(f"Selected spritesheet {name}")
@@ -309,7 +309,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Successfully loaded {len(sheets)} spritesheets")
 
     def saveStylesheets(self, outputFilename=None):
-        msg = """ Make sure that your stylesheet files are checked into
+        msg = """Make sure that your stylesheet files are checked into
 version control so you can revert if something goes wrong.
 This tool is still under development.
 Do you wish to continue?
@@ -366,6 +366,8 @@ Do you wish to continue?"""
         self.setUnsavedChanges(False)
         self.currentDocumentDigest = Myth.Util.checksumFile(outputFilename)
         self.statusBar().showMessage(f"Successfully saved stylesheet {outputFilename}")
+
+        return outputFilename
 
     def serializeStylesheets(self):
         ret = ""
@@ -436,6 +438,7 @@ Do you wish to continue?"""
         pixmap = QPixmap.fromImage(image)
         flipX = self.actionFlipImageX.isChecked()
         flipY = self.actionFlipImageY.isChecked()
+
         self.imageSelect.setPixmap(pixmap, flipX, flipY)
         self.scale = 1.0
         self.imageSelect.adjustSize()
@@ -588,8 +591,9 @@ Do you wish to continue?"""
         if not filePath or not fmt:
             return
 
-        self.saveStylesheets(filePath)
-        self.loadStylesheet(filePath)
+        newpath = self.saveStylesheets(filePath)
+        self.currentDocument = newpath
+        self.updateTitle()
 
     def _cb_actionPackImages(self):
         d = PackerWindow()
