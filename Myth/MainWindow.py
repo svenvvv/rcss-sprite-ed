@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
     recentFilesCount = 5
     # HACK: refactor document into own class
     currentDocument = None
+    hasUnsavedChanges = False
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -101,7 +102,7 @@ class MainWindow(QMainWindow):
         self.actionSaveAs.triggered.connect(self._cb_actionSaveAs)
         self.actionReload.triggered.connect(self._cb_actionReload)
         self.actionPackImages.triggered.connect(self._cb_actionPackImages)
-        self.actionQuit.triggered.connect(self.close)
+        self.actionQuit.triggered.connect(self._cb_actionQuit)
 
         self.actionUndo.triggered.connect(lambda: self.curUndoStack.undo())
         self.actionRedo.triggered.connect(lambda: self.curUndoStack.redo())
@@ -181,11 +182,32 @@ class MainWindow(QMainWindow):
         cancelAction.setIcon(QIcon.fromTheme("go-previous"))
         self.ctxRedrawMenu.addAction(cancelAction)
 
-    def updateTitle(self, filename=None):
-        if filename:
-            self.setWindowTitle(f"{self.windowTitle} - {filename}")
-        else:
-            self.setWindowTitle(self.windowTitle)
+    def setUnsavedChanges(self, new):
+        prev = self.hasUnsavedChanges
+        self.hasUnsavedChanges = new
+        if new != prev:
+            self.updateTitle()
+
+    def promptForDiscardChanges(self):
+        if not self.hasUnsavedChanges:
+            return True
+
+        msg = "You have unsaved changes which will be discarded.\nDo you wish to continue?"
+        q = QMessageBox.question(self, "Discard changes", msg)
+        if q == QMessageBox.StandardButton.Yes:
+            return True
+        return False
+
+    def updateTitle(self):
+        title = self.windowTitle
+
+        if self.currentDocument:
+            filename = os.path.basename(self.currentDocument)
+            title += f" - {filename}"
+            if self.hasUnsavedChanges:
+                title += "*"
+
+        self.setWindowTitle(title)
 
     def deleteAllSprites(self):
         self.redrawingSprite = None
@@ -209,6 +231,7 @@ class MainWindow(QMainWindow):
         self.curUndoStack = self.undoStacks[name]
         self.curUndoStack.canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
         self.curUndoStack.canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
+        self.curUndoStack.indexChanged.connect(lambda: self.setUnsavedChanges(True))
         self.actionUndo.setEnabled(self.curUndoStack.canUndo())
         self.actionRedo.setEnabled(self.curUndoStack.canRedo())
 
@@ -219,6 +242,9 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Selected spritesheet {name}")
 
     def loadStylesheet(self, filename):
+        if not self.promptForDiscardChanges():
+            return
+
         parser = RCSSParser()
         css = parser.parse_stylesheet_file(filename)
 
@@ -257,7 +283,9 @@ class MainWindow(QMainWindow):
                 return
 
         self.currentDocument = filename
-        self.updateTitle(os.path.basename(filename))
+        self.setUnsavedChanges(False)
+
+        self.updateTitle()
         self.loadParsedStylesheets(parsedSheets, True)
 
     def loadParsedStylesheets(self, sheets, loadImage=True):
@@ -278,7 +306,6 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Successfully loaded {len(sheets)} spritesheets")
 
     def saveStylesheets(self, outputFilename=None):
-
         warnmsg = """
 Make sure that your stylesheet files are checked into version control so you can revert if something goes wrong.
 This tool is still under development.
@@ -324,6 +351,7 @@ Do you wish to continue?
         for sheet in self.spritesheetsList.model().sheets():
             sheet.setLinerange(dumpRange)
 
+        self.setUnsavedChanges(False)
         self.statusBar().showMessage(f"Successfully saved stylesheet {outputFilename}")
 
     def serializeStylesheets(self):
@@ -418,6 +446,7 @@ Do you wish to continue?
         try:
             cmd = type(*args, **kwargs)
             stack.push(cmd)
+            self.setUnsavedChanges(True)
             return True
         except CommandError as e:
             QMessageBox.warning(self, self.windowTitle, str(e))
@@ -491,6 +520,11 @@ Do you wish to continue?
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
             self.createCommand(self.curUndoStack, CommandCreateSprite, self, spr)
 
+    def _cb_actionQuit(self):
+        if not self.promptForDiscardChanges():
+            return
+        self.close()
+
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
         if not self.loadImage(self.spritesList.model().sheet().sourceLongPath()):
@@ -551,6 +585,7 @@ Do you wish to continue?
                 mod.insertRow(d.generatedSheet)
             else:
                 self.loadParsedStylesheets([ d.generatedSheet ])
+            self.setUnsavedChanges(True)
             self.statusBar().showMessage("Successfully packed a spritesheet")
 
     def _cb_actionZoomIn(self):
