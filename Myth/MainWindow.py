@@ -237,7 +237,8 @@ class MainWindow(QMainWindow):
         self.actionRedo.setEnabled(self.curUndoStack.canRedo())
 
         if loadImage:
-            self.loadImage(ssmod.getSheetImage(name))
+            imgName = ssmod.getSheetImage(name)
+            self.loadImage(imgName)
             self._cb_actionZoomReset()
 
         self.statusBar().showMessage(f"Selected spritesheet {name}")
@@ -420,15 +421,16 @@ Do you wish to continue?"""
         self.ctxEditMenu.popup(pos)
 
     def loadImage(self, filename):
-        try:
-            reader = QImageReader(filename)
-            qimg = reader.read()
-            self.setImage(qimg)
-            self.statusBar().showMessage(f"Successfully loaded image {filename}")
-            return True
-        except Exception as e:
-            QMessageBox.warning(self, self.windowTitle, f"Failed to load {filename}: {e}.")
+        reader = QImageReader(filename)
+        qimg = reader.read()
+
+        if reader.error():
+            QMessageBox.warning(self, self.windowTitle, f"Failed to load {filename}: {reader.error()}.")
             return False
+
+        self.setImage(qimg)
+        self.statusBar().showMessage(f"Successfully loaded image {filename}")
+        return True
 
     def setImage(self, image):
         pixmap = QPixmap.fromImage(image)
