@@ -11,8 +11,10 @@ Features:
 * Delete sprites,
 * Modify existing sprites (redraw using mouse or enter values),
 * Replace source image (spritesheet `src` attribute),
-* Save into RCSS files,
+* Save into RCSS files [^1],
 * Undo/redo.
+
+[^1]: Make sure to back up your stylesheets beforehand, as this feature is still in testing ;)
 
 ![Screenshot](./img/rcss-ed-1.png)
 
