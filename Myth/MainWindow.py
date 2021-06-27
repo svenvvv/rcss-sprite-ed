@@ -308,7 +308,27 @@ class MainWindow(QMainWindow):
         self.spritesheetsList.selectionModel().currentChanged.connect(lambda cur,prev: self.selectSpritesheet(cur.data()))
         self.statusBar().showMessage(f"Successfully loaded {len(sheets)} spritesheets")
 
+    def saveStylesheetsNewFile(self, outputFilename):
+        sheetData = self.serializeStylesheets()
+        sheetDataLines = sheetData.count("\n") - 1
+
+        with open(outputFilename, "w") as fd:
+            fd.write(sheetData)
+
+        for sheet in self.spritesheetsList.model().sheets():
+            sheet.setLinerange((0, sheetDataLines))
+
+        self.setUnsavedChanges(False)
+        self.currentDocumentDigest = Myth.Util.checksumFile(outputFilename)
+        self.statusBar().showMessage(f"Successfully saved stylesheet {outputFilename}")
+
+        return outputFilename
+
     def saveStylesheets(self, outputFilename=None):
+        # If we're saving to a new file then redirect
+        if not self.currentDocument:
+            return self.saveStylesheetsNewFile(outputFilename)
+
         msg = """Make sure that your stylesheet files are checked into
 version control so you can revert if something goes wrong.
 This tool is still under development.
@@ -584,7 +604,10 @@ Do you wish to continue?"""
             self._setupRecentFiles()
 
     def _cb_actionSave(self):
-        self.saveStylesheets()
+        if self.currentDocument:
+            self.saveStylesheets()
+        else:
+            self._cb_actionSaveAs()
 
     def _cb_actionSaveAs(self):
         fmts = "RCSS documents (*.rcss);;All files (*.*)"
