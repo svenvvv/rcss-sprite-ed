@@ -344,7 +344,9 @@ Do you wish to continue?"""
 
         ranges = []
         for sheet in self.spritesheetsList.model().sheets():
-            ranges.append(sheet.linerange())
+            range = sheet.linerange()
+            if range:
+                ranges.append(range)
 
         dumpRange = None
         with open(outputFilename, "w") as fd, open(backupFilename, "r") as fs:

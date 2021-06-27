@@ -127,7 +127,7 @@ class PackerWindow(QDialog):
         if len(base) == 0:
             base = "."
 
-        self.generatedSheet = Spritesheet(base, "packed", sprites, file)
+        self.generatedSheet = Spritesheet(base, None, "packed", sprites, file)
 
         self.done(1)
 
