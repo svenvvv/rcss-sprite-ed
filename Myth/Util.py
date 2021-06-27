@@ -26,7 +26,6 @@ def checksumFile(filename, chunkSize=32*1024):
 
 def supportedImageFormats(fmts, aggregate):
     ret = None
-    print(fmts)
     if aggregate:
         ret = functools.reduce(lambda a, v: a + f" *.{str(v, 'utf8').lower()}",
                                fmts, "All supported formats (") + ")"
