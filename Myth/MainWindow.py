@@ -587,7 +587,7 @@ Do you wish to continue?"""
         self.repaint()
 
     def _cb_actionOpen(self):
-        fmts = "RCSS stylesheet (*.rcss);;All files (*.*)"
+        fmts = "RCSS stylesheet (*.rcss);;All files (*)"
         filename,_ = QFileDialog.getOpenFileName(self, "Open stylesheet",
                                                  QDir.currentPath(), fmts)
         if filename:
@@ -610,7 +610,7 @@ Do you wish to continue?"""
             self._cb_actionSaveAs()
 
     def _cb_actionSaveAs(self):
-        fmts = "RCSS documents (*.rcss);;All files (*.*)"
+        fmts = "RCSS documents (*.rcss);;All files (*)"
         filePath, fmt = QFileDialog.getSaveFileName(self, "Select output file",
                                                      QDir.currentPath(), fmts)
         if not filePath or not fmt:

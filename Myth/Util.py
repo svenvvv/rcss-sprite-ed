@@ -37,7 +37,7 @@ def supportedImageFormats(fmts, aggregate):
         ret = functools.reduce(fn, fmts, "")
         # NOTE: semicolons left over from reduce()
         # NOTE: if changing this string then change supportedImageFormatToExt()
-        ret += "All files (*.*)"
+        ret += "All files (*)"
 
     return ret
 
