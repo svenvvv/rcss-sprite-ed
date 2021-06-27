@@ -16,7 +16,7 @@ Features:
 
 [^1]: Make sure to back up your stylesheets beforehand, as this feature is still in testing ;)
 
-![Screenshot](./img/rcss-ed-1.png)
+![Screenshot](./img/front.png)
 
 If you encounter any bugs then please create an 
 [issue](https://github.com/svenvvv/rcss-sprite-ed/issues).
