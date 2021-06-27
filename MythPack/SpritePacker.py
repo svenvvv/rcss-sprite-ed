@@ -1,9 +1,8 @@
 import os
-import PIL
-from PIL.ImageQt import ImageQt
 
 from Myth.Models.Sprite import Sprite
 
+import MythPack.QPILImage
 from PyTexturePacker import Packer
 from PyTexturePacker.ImageRect import ImageRect
 
@@ -78,7 +77,7 @@ class SpritePacker:
             if len(rmlSprites) != len(self._images):
                 error = "Could not fit all sprites into the specified dimensions!"
 
-            return ImageQt(packed), rmlSprites, error
+            return packed.getQImage(), rmlSprites, error
         except ValueError as e:
             print(e)
             return None, None, str(e)

@@ -76,7 +76,7 @@ class CommandSetImage(QUndoCommand):
             self.win.spritesList.model().sheet().setBasepath(os.path.dirname(new))
             self.win.spritesList.model().sheet().setSource(os.path.basename(new))
         else:
-            print(f"Failed to load image {new}")
+            raise CommandError(f"Failed to load image {new}")
 
     def redo(self):
         self.do(self.new)

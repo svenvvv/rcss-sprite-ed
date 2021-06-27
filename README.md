@@ -11,9 +11,12 @@ Features:
 * Delete sprites,
 * Modify existing sprites (redraw using mouse or enter values),
 * Replace source image (spritesheet `src` attribute),
+* Save into RCSS files [^1],
 * Undo/redo.
 
-![Screenshot](./img/rcss-ed-1.png)
+[^1]: Make sure to back up your stylesheets beforehand, as this feature is still in testing ;)
+
+![Screenshot](./img/front.png)
 
 If you encounter any bugs then please create an 
 [issue](https://github.com/svenvvv/rcss-sprite-ed/issues).
@@ -36,19 +39,4 @@ Run the program.
 ./main.py
 # or python3 main.py
 ```
-
-## TODO
-
-* Doesn't support saving into RCSS files.
-
-Presently, when you click save, then the program will present you with text
-which you can manually paste into your stylesheet.
-
-* No support for creating new spritesheets.
-
-It's required to provide an existing one from an RCSS file.
-
-* Bugs, probably.
-
-Haven't had a chance to work on my UI, as I was writing this tool instead :).
 

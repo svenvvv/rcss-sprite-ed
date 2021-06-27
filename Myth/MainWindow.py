@@ -1,6 +1,7 @@
 import os
 import Myth.Util
 import functools
+import shutil
 
 from PySide2.QtGui import *
 from PySide2.QtCore import *
@@ -33,6 +34,10 @@ class MainWindow(QMainWindow):
     undoStacks = {}
     curUndoStack = None
     recentFilesCount = 5
+    # HACK: refactor document into own class
+    currentDocument = None
+    currentDocumentDigest = None
+    hasUnsavedChanges = False
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -95,10 +100,10 @@ class MainWindow(QMainWindow):
 
         self.actionOpen.triggered.connect(self._cb_actionOpen)
         self.actionSave.triggered.connect(self._cb_actionSave)
-        self.actionSaveAs.triggered.connect(self._cb_actionSave)
+        self.actionSaveAs.triggered.connect(self._cb_actionSaveAs)
         self.actionReload.triggered.connect(self._cb_actionReload)
         self.actionPackImages.triggered.connect(self._cb_actionPackImages)
-        self.actionQuit.triggered.connect(self.close)
+        self.actionQuit.triggered.connect(self._cb_actionQuit)
 
         self.actionUndo.triggered.connect(lambda: self.curUndoStack.undo())
         self.actionRedo.triggered.connect(lambda: self.curUndoStack.redo())
@@ -178,16 +183,37 @@ class MainWindow(QMainWindow):
         cancelAction.setIcon(QIcon.fromTheme("go-previous"))
         self.ctxRedrawMenu.addAction(cancelAction)
 
-    def updateTitle(self, filename=None):
-        if filename:
-            self.setWindowTitle(f"{self.windowTitle} - {filename}")
-        else:
-            self.setWindowTitle(self.windowTitle)
+    def setUnsavedChanges(self, new):
+        prev = self.hasUnsavedChanges
+        self.hasUnsavedChanges = new
+        if new != prev:
+            self.updateTitle()
+
+    def promptForDiscardChanges(self):
+        if not self.hasUnsavedChanges:
+            return True
+
+        msg = "You have unsaved changes which will be discarded.\nDo you wish to continue?"
+        q = QMessageBox.question(self, "Discard changes", msg)
+        if q == QMessageBox.StandardButton.Yes:
+            return True
+        return False
+
+    def updateTitle(self):
+        title = self.windowTitle
+
+        if self.currentDocument:
+            filename = os.path.basename(self.currentDocument)
+            title += f" - {filename}"
+            if self.hasUnsavedChanges:
+                title += "*"
+
+        self.setWindowTitle(title)
 
     def deleteAllSprites(self):
         self.redrawingSprite = None
 
-    def selectSpritesheet(self, name, loadImage=True):
+    def selectSpritesheet(self, name, loadImage=True, imagePath=""):
         self.redrawingSprite = None
 
         ssmod = self.spritesheetsList.model()
@@ -206,35 +232,51 @@ class MainWindow(QMainWindow):
         self.curUndoStack = self.undoStacks[name]
         self.curUndoStack.canUndoChanged.connect(lambda v: self.actionUndo.setEnabled(v))
         self.curUndoStack.canRedoChanged.connect(lambda v: self.actionRedo.setEnabled(v))
+        self.curUndoStack.indexChanged.connect(lambda: self.setUnsavedChanges(True))
         self.actionUndo.setEnabled(self.curUndoStack.canUndo())
         self.actionRedo.setEnabled(self.curUndoStack.canRedo())
 
         if loadImage:
-            self.loadImage(ssmod.getSheetImage(name))
+            imgName = ssmod.getSheetImage(name)
+            self.loadImage(imagePath + imgName)
             self._cb_actionZoomReset()
 
         self.statusBar().showMessage(f"Selected spritesheet {name}")
 
     def loadStylesheet(self, filename):
+        if not self.promptForDiscardChanges():
+            return
+
         parser = RCSSParser()
         css = parser.parse_stylesheet_file(filename)
 
         if parser.hadSpritesheetError:
             print("CSS errors:", css.errors)
-            QMessageBox.critical(self, self.windowTitle, f"Error loading file {filename}: {css.errors}")
+            QMessageBox.critical(self, self.windowTitle,
+                                 f"Error loading file {filename}: {css.errors}")
             return
 
         spritesheets = list(filter(lambda r: r.at_keyword == "@spritesheet", css.rules))
 
         if len(spritesheets) == 0:
-            QMessageBox.critical(self, self.windowTitle, f"Stylesheet does not contain any spritesheets!")
+            if css.errors:
+                errmsg = functools.reduce(lambda a,v: a + str(v) + "\n", css.errors, "")
+                QInputDialog().getMultiLineText(self, "Could not find any spritesheets",
+                                                "Parser errors encountered:", errmsg)
+            else:
+                QMessageBox.critical(self, self.windowTitle,
+                                     f"Stylesheet does not contain any spritesheets!")
+
             return
 
+        # TODO: this should be refactored into a document class which we stuff all the sheets into
         parsedSheets = []
         basepath = os.path.dirname(filename)
         for ss in spritesheets:
             try:
-                s = Spritesheet(basepath, ss.name, ss.declarations,
+                # NOTE: Parser lines start from 1, ours from 0
+                linerange = (ss.line-1, ss.endline-1)
+                s = Spritesheet(basepath, linerange, ss.name, ss.declarations,
                                 ss.props["src"], ss.props.get("resolution"))
                 s.setBasepath(basepath)
                 parsedSheets.append(s)
@@ -242,7 +284,11 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, self.windowTitle, f"Error parsing \"{ss.name}\": {e}")
                 return
 
-        self.updateTitle(os.path.basename(filename))
+        self.currentDocument = filename
+        self.currentDocumentDigest = Myth.Util.checksumFile(filename)
+        self.setUnsavedChanges(False)
+
+        self.updateTitle()
         self.loadParsedStylesheets(parsedSheets, True)
 
     def loadParsedStylesheets(self, sheets, loadImage=True):
@@ -262,7 +308,68 @@ class MainWindow(QMainWindow):
         self.spritesheetsList.selectionModel().currentChanged.connect(lambda cur,prev: self.selectSpritesheet(cur.data()))
         self.statusBar().showMessage(f"Successfully loaded {len(sheets)} spritesheets")
 
-    def saveStylesheet(self):
+    def saveStylesheets(self, outputFilename=None):
+        msg = """Make sure that your stylesheet files are checked into
+version control so you can revert if something goes wrong.
+This tool is still under development.
+Do you wish to continue?
+"""
+        warn = QMessageBox.question(self, self.windowTitle, msg)
+        if warn != QMessageBox.StandardButton.Yes:
+            return
+
+        digest = Myth.Util.checksumFile(self.currentDocument)
+        if digest != self.currentDocumentDigest:
+            msg = """The file has been changed outside of this tool!
+This will most likely cause file corruption if the number of lines has changed.
+You really shouldn't continue..
+Do you wish to continue?"""
+            warn = QMessageBox.question(self, self.windowTitle, msg)
+            if warn != QMessageBox.StandardButton.Yes:
+                return
+
+        if outputFilename is None:
+            outputFilename = self.currentDocument
+
+        # If we're overwriting then create a backup to read from
+        backupFilename = None
+        if outputFilename == self.currentDocument:
+            backupFilename = self.currentDocument + ".bak"
+            shutil.copyfile(self.currentDocument, backupFilename)
+        else:
+            backupFilename = self.currentDocument
+
+        sheetData = self.serializeStylesheets()
+        sheetDataLines = sheetData.count("\n") - 1
+
+        ranges = []
+        for sheet in self.spritesheetsList.model().sheets():
+            ranges.append(sheet.linerange())
+
+        dumpRange = None
+        with open(outputFilename, "w") as fd, open(backupFilename, "r") as fs:
+            for i,l in enumerate(fs):
+                inrange = list(filter(lambda range: range[0] <= i and range[1] >= i, ranges))
+
+                if len(inrange) > 0:
+                    if not dumpRange:
+                        fd.write(sheetData)
+                        dumpRange = (i, i+sheetDataLines)
+                    continue
+
+                fd.write(l)
+
+        # Rewrite all ranges, since we dumped them all in the same range
+        for sheet in self.spritesheetsList.model().sheets():
+            sheet.setLinerange(dumpRange)
+
+        self.setUnsavedChanges(False)
+        self.currentDocumentDigest = Myth.Util.checksumFile(outputFilename)
+        self.statusBar().showMessage(f"Successfully saved stylesheet {outputFilename}")
+
+        return outputFilename
+
+    def serializeStylesheets(self):
         ret = ""
         for ss in self.spritesheetsList.model().sheets():
             ret += ss.serialize()
@@ -316,20 +423,22 @@ class MainWindow(QMainWindow):
         self.ctxEditMenu.popup(pos)
 
     def loadImage(self, filename):
-        try:
-            reader = QImageReader(filename)
-            qimg = reader.read()
-            self.setImage(qimg)
-            self.statusBar().showMessage(f"Successfully loaded image {filename}")
-            return True
-        except Exception as e:
-            QMessageBox.warning(self, self.windowTitle, f"Failed to load {filename}: {e}.")
+        reader = QImageReader(filename)
+        qimg = reader.read()
+
+        if reader.error():
+            QMessageBox.warning(self, self.windowTitle, f"Failed to load {filename}: {reader.error()}.")
             return False
+
+        self.setImage(qimg)
+        self.statusBar().showMessage(f"Successfully loaded image {filename}")
+        return True
 
     def setImage(self, image):
         pixmap = QPixmap.fromImage(image)
         flipX = self.actionFlipImageX.isChecked()
         flipY = self.actionFlipImageY.isChecked()
+
         self.imageSelect.setPixmap(pixmap, flipX, flipY)
         self.scale = 1.0
         self.imageSelect.adjustSize()
@@ -354,6 +463,8 @@ class MainWindow(QMainWindow):
         try:
             cmd = type(*args, **kwargs)
             self.curUndoStack.push(cmd)
+            stack.push(cmd)
+            self.setUnsavedChanges(True)
             return True
         except CommandError as e:
             QMessageBox.warning(self, self.windowTitle, str(e))
@@ -427,13 +538,18 @@ class MainWindow(QMainWindow):
             spr = Sprite(name, r.x(), r.y(), r.width(), r.height())
             self.createCommand(CommandCreateSprite, self, spr)
 
+    def _cb_actionQuit(self):
+        if not self.promptForDiscardChanges():
+            return
+        self.close()
+
     def _cb_actionReload(self):
         # NOTE: this isn't a CommandReload because we can't undo a reload anyways :-)
         if not self.loadImage(self.spritesList.model().sheet().sourceLongPath()):
             self.statusBar().showMessage("Image reload failed!")
 
     def _cb_actionReplaceImage(self):
-        fmts = Myth.Util.supportedImageFormatsQtAllInOne()
+        fmts = Myth.Util.supportedImageReadFormats(True)
         filename,_ = QFileDialog.getOpenFileName(self, "Open image", QDir.currentPath(), fmts)
         if filename:
             self.createCommand(CommandSetImage, self, filename)
@@ -468,9 +584,18 @@ class MainWindow(QMainWindow):
             self._setupRecentFiles()
 
     def _cb_actionSave(self):
-        ss = self.saveStylesheet()
-        res, ok = QInputDialog().getMultiLineText(self, "Output",
-                                                  "Saving into RCSS file isn't implemented yet.", ss)
+        self.saveStylesheets()
+
+    def _cb_actionSaveAs(self):
+        fmts = "RCSS documents (*.rcss);;All files (*.*)"
+        filePath, fmt = QFileDialog.getSaveFileName(self, "Select output file",
+                                                     QDir.currentPath(), fmts)
+        if not filePath or not fmt:
+            return
+
+        newpath = self.saveStylesheets(filePath)
+        self.currentDocument = newpath
+        self.updateTitle()
 
     def _cb_actionPackImages(self):
         d = PackerWindow()
@@ -481,6 +606,7 @@ class MainWindow(QMainWindow):
                 mod.insertRow(d.generatedSheet)
             else:
                 self.loadParsedStylesheets([ d.generatedSheet ])
+            self.setUnsavedChanges(True)
             self.statusBar().showMessage("Successfully packed a spritesheet")
 
     def _cb_actionZoomIn(self):

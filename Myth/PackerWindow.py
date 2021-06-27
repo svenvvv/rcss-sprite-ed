@@ -1,4 +1,3 @@
-import PIL
 import functools
 import os
 import Myth.Util
@@ -41,16 +40,16 @@ class PackerWindow(QDialog):
 
         try:
             packer = SpritePacker(loadPath, True)
+            return packer.pack(**kwargs)
         except PackerException as e:
             QMessageBox.critical(self, self.windowTitle(), str(e))
 
-        return packer.pack(**kwargs)
-
     def _cb_selectColor(self):
-        color = QColorDialog.getColor(parent=self, title="Choose background color", options=QColorDialog.ShowAlphaChannel)
+        color = QColorDialog.getColor(parent=self, title="Choose background color",
+                                      options=QColorDialog.ShowAlphaChannel)
         if not color:
             return
-        hexcol = color.name()[1:] + hex(color.alpha())[2:]
+        hexcol = color.name()[1:] + hex(color.alpha())[2:].zfill(2)
         self._color = int(hexcol, 16)
 
     def _cb_generatePreview(self):
@@ -83,15 +82,21 @@ class PackerWindow(QDialog):
         self.inputEdit.setText(loadPath)
 
     def _cb_outputBrowse(self):
-        imgFmts = Myth.Util.supportedImageFormatsQt()
+        imgFmts = Myth.Util.supportedImageWriteFormats()
         imagePath, fmt = QFileDialog.getSaveFileName(self, "Select output image file",
                                                      QDir.currentPath(), imgFmts)
         if not imagePath or not fmt:
             return
 
-        self._outFmt = Myth.Util.supportedImageFormatFromQt(fmt)
+        self._outFmt = Myth.Util.supportedImageFormatToExt(fmt)
 
-        if self._outFmt and not imagePath.lower().endswith(self._outFmt.lower()):
+        if not self._outFmt:
+            _,ext = os.path.splitext(imagePath)
+            if len(ext) == 0:
+                self._outFmt = "PNG"
+                imagePath += ".png"
+
+        if not imagePath.lower().endswith(self._outFmt.lower()):
             imagePath += "." + self._outFmt.lower()
         self.outputEdit.setText(imagePath)
 
@@ -100,7 +105,8 @@ class PackerWindow(QDialog):
         imagePath = self.outputEdit.text()
 
         if not loadPath or not imagePath:
-            QMessageBox.warning(self, self.windowTitle(), "Please enter input and output directories")
+            QMessageBox.warning(self, self.windowTitle(),
+                                "Please enter input and output directories")
             return
 
         img, sprites, error = self.generate(loadPath)
@@ -109,7 +115,11 @@ class PackerWindow(QDialog):
             QMessageBox.critical(self, self.windowTitle(), errmsg)
             return
 
-        img.save(imagePath, self._outFmt)
+        writer = QImageWriter(imagePath, bytes(self._outFmt, "utf8"))
+        if not writer.write(img):
+            QMessageBox.critical(self, self.windowTitle(),
+                                 f"Error writing image: {writer.error()}")
+            return
 
         file = os.path.basename(imagePath)
         base = os.path.dirname(imagePath)
