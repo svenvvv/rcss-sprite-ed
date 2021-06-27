@@ -616,6 +616,9 @@ Do you wish to continue?"""
         if not filePath or not fmt:
             return
 
+        if not filePath.lower().endswith(".rcss"):
+            filePath += ".rcss"
+
         newpath = self.saveStylesheets(filePath)
         self.currentDocument = newpath
         self.updateTitle()
