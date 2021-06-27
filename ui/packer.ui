@@ -59,7 +59,7 @@
            <x>0</x>
            <y>0</y>
            <width>424</width>
-           <height>282</height>
+           <height>284</height>
           </rect>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
@@ -154,17 +154,28 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QSpinBox" name="innerPaddingSpinBox"/>
+         <widget class="QSpinBox" name="innerPaddingSpinBox">
+          <property name="toolTip">
+           <string>Number of transparent pixels to pad the sprites with</string>
+          </property>
+         </widget>
         </item>
         <item row="2" column="1">
          <widget class="QPushButton" name="bgColorButton">
+          <property name="toolTip">
+           <string>Background fill color of the generated image</string>
+          </property>
           <property name="text">
            <string>Select</string>
           </property>
          </widget>
         </item>
         <item row="3" column="1">
-         <widget class="QSpinBox" name="borderPaddingSpinBox"/>
+         <widget class="QSpinBox" name="borderPaddingSpinBox">
+          <property name="toolTip">
+           <string>Space between the sprites and the image edges, in pixels</string>
+          </property>
+         </widget>
         </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label">
@@ -175,6 +186,9 @@
         </item>
         <item row="1" column="1">
          <widget class="QSpinBox" name="maxHeightSpinBox">
+          <property name="toolTip">
+           <string>Maximum height of the generated image</string>
+          </property>
           <property name="maximum">
            <number>999999</number>
           </property>
@@ -185,6 +199,9 @@
         </item>
         <item row="0" column="1">
          <widget class="QSpinBox" name="maxWidthSpinBox">
+          <property name="toolTip">
+           <string>Maximum width of the generated image</string>
+          </property>
           <property name="maximum">
            <number>999999</number>
           </property>
@@ -195,6 +212,9 @@
         </item>
         <item row="6" column="0" colspan="2">
          <widget class="QCheckBox" name="squareOutputCheckBox">
+          <property name="toolTip">
+           <string>Force output texture to be square</string>
+          </property>
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
           </property>
@@ -204,10 +224,17 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QSpinBox" name="shapePaddingSpinBox"/>
+         <widget class="QSpinBox" name="shapePaddingSpinBox">
+          <property name="toolTip">
+           <string>Space between sprites, in pixels</string>
+          </property>
+         </widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_2">
+          <property name="toolTip">
+           <string/>
+          </property>
           <property name="text">
            <string>Max height</string>
           </property>
