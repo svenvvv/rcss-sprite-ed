@@ -485,7 +485,6 @@ Do you wish to continue?"""
         try:
             cmd = type(*args, **kwargs)
             self.curUndoStack.push(cmd)
-            stack.push(cmd)
             self.setUnsavedChanges(True)
             return True
         except CommandError as e:
