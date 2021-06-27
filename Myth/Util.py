@@ -3,6 +3,12 @@ import hashlib
 
 from PySide2.QtGui import QImageReader, QImageWriter
 
+try:
+    from functools import cache
+except Exception:
+    # Cache is in Python 3.9 onwards, if missing then use LRU cache (in from 3.2)
+    functools.cache = functools.lru_cache(maxsize=2)
+
 
 VERSION = "1.0"
 
