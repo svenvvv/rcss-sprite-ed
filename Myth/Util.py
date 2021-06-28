@@ -10,7 +10,7 @@ except Exception:
     functools.cache = functools.lru_cache(maxsize=2)
 
 
-VERSION = "1.0"
+VERSION = "1.0.1"
 
 
 def checksumFile(filename, chunkSize=32*1024):

@@ -578,7 +578,7 @@ Do you wish to continue?"""
     def _cb_actionSetResolution(self):
         sheet = self.spritesList.model().sheet()
         res, ok = QInputDialog().getDouble(self, "Set resolution", "New resolution:",
-                                           sheet.resolution(), minValue=0)
+                                           sheet.resolution() or 1.0, minValue=0)
         if res and ok:
             self.createCommand(self.curUndoStack, CommandSetResolution, self, res)
 
